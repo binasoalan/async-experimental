@@ -17,7 +17,7 @@
 (defn nav []
   [:nav
    [:li (link-to "/" "Laman Utama")]
-   [:li (link-to "/about" "Tentang Kami")]])
+   [:li (link-to "/tentang" "Tentang Kami")]])
 
 (defn login []
   [:form {:method "post" :action "/login"}
@@ -26,7 +26,8 @@
    (text-field "username")
    (label "password" "Password")
    (password-field "password")
-   (submit-button "Login")])
+   (submit-button "Login")
+   (link-to "/daftar" "Daftar")])
 
 
 ;; Pages
