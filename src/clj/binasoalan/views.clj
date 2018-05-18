@@ -5,14 +5,18 @@
             [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
 (defmacro base-html
-  [{:keys [title]} & contents]
-  `(html5
-    [:head
-     [:meta {:charset "utf-8"}]
-     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-     [:title ~title]
-     (include-css "css/style.css")]
-    [:body ~@contents]))
+  [{:keys [title] :as attr} & contents]
+  (if-not (map? attr)
+    `(base-html {} ~attr ~@contents)
+    `(html5
+      [:head
+       [:meta {:charset "utf-8"}]
+       [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+       [:title (if ~title
+                 (str ~title " | Bina Soalan")
+                 "Bina Soalan")]
+       (include-css "css/style.css")]
+      [:body ~@contents])))
 
 (defn nav []
   [:nav
@@ -35,7 +39,6 @@
 (defn index [_ respond _]
   (respond
    (base-html
-    {:title "Bina Soalan"}
     [:header
      [:h1 "Bina Soalan"]]
     (nav)
@@ -44,7 +47,7 @@
 (defn about [_ respond _]
   (respond
    (base-html
-    {:title "Tentang Kami - Bina Soalan"}
+    {:title "Tentang Kami"}
     [:header
      [:h1 "Tentang Kami"]]
     (nav))))
