@@ -8,6 +8,7 @@
                  [cljs-ajax "0.7.3"]
                  [compojure "1.6.1"]
                  [day8.re-frame/http-fx "0.1.6"]
+                 [hiccup "1.0.5"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/core.async "0.4.474"]
