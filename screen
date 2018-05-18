@@ -1,0 +1,6 @@
+zombie kr
+
+screen keynav
+screen -t server sh -c "lein ring server"
+screen -t client sh -c "lein figwheel dev"
+screen bash
