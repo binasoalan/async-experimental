@@ -7,9 +7,10 @@
 
 (defroutes app-routes
   (GET "/" [] views/index)
+  (GET "/login" [] views/login)
   (POST "/login" [] "Logged in")
-  (GET "/daftar" [] "Sign Up")
-  (GET "/tentang" [] views/about)
+  (POST "/daftar" [] "Registered")
+  (GET "/tentang" [] views/tentang)
   (route/not-found "Not Found"))
 
 (def app

@@ -1,6 +1,7 @@
 (ns binasoalan.views
   (:require [hiccup.element :refer [link-to]]
-            [hiccup.form :refer [label text-field password-field submit-button]]
+            [hiccup.form :refer [label text-field password-field email-field
+                                 submit-button]]
             [hiccup.page :refer [html5 include-css]]
             [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
@@ -21,17 +22,28 @@
 (defn nav []
   [:nav
    [:li (link-to "/" "Laman Utama")]
-   [:li (link-to "/tentang" "Tentang Kami")]])
+   [:li (link-to "/tentang" "Tentang Kami")]
+   [:li (link-to "/login" "Log Masuk")]])
 
-(defn login []
+(defn login-form []
   [:form {:method "post" :action "/login"}
    (anti-forgery-field)
    (label "username" "Username")
    (text-field "username")
    (label "password" "Password")
    (password-field "password")
-   (submit-button "Login")
-   (link-to "/daftar" "Daftar")])
+   (submit-button "Login")])
+
+(defn register-form []
+  [:form {:method "post" :action "/daftar"}
+   (anti-forgery-field)
+   (label "username" "Username")
+   (text-field "username")
+   (label "email" "Email")
+   (email-field "email")
+   (label "password" "Password")
+   (password-field "password")
+   (submit-button "Daftar")])
 
 
 ;; Pages
@@ -42,12 +54,23 @@
     [:header
      [:h1 "Bina Soalan"]]
     (nav)
-    (login))))
+    (register-form))))
 
-(defn about [_ respond _]
+(defn login [_ respond _]
+  (respond
+   (base-html
+    {:title "Log Masuk"}
+    [:header
+     [:h1 "Log Masuk"]]
+    (nav)
+    (login-form))))
+
+(defn tentang [_ respond _]
   (respond
    (base-html
     {:title "Tentang Kami"}
     [:header
      [:h1 "Tentang Kami"]]
-    (nav))))
+    (nav)
+    [:section
+     [:p "Now we know who you are, I know who I am."]])))
