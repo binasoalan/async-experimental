@@ -59,28 +59,34 @@
    [:div.form-group
     (label "username" "Username")
     [:input#username.form-control
-     {:type "text" :placeholder "Username" :required true}]]
+     {:type "text" :name "username" :placeholder "Username" :required true}]]
    [:div.form-group
     (label "password" "Password")
     [:input#password.form-control
-     {:type "password" :placeholder "Password" :required true}]]
+     {:type "password" :name "password" :placeholder "Password" :required true}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
-(defn register-form []
+(defn register-form [& [{:keys [username email password] :as errors}]]
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
+   (when username
+     [:div.alert.alert-warning "Invalid username"])
+   (when email
+     [:div.alert.alert-warning "Invalid email"])
+   (when password
+     [:div.alert.alert-warning "Invalid password"])
    [:div.form-group
     (label "username" "Username")
     [:input#username.form-control
-     {:type "text" :placeholder "Username" :required true}]]
+     {:type "text" :name "username" :placeholder "Username" :required true}]]
    [:div.form-group
     (label "email" "Email")
     [:input#email.form-control
-     {:type "email" :placeholder "Email" :required true}]]
+     {:type "email" :name "email" :placeholder "Email" :required true}]]
    [:div.form-group
     (label "password" "Password")
     [:input#password.form-control
-     {:type "password" :placeholder "Password" :required true}]]
+     {:type "password" :name "password" :placeholder "Password" :required true}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]])
 
 
@@ -112,7 +118,9 @@
    (base-html
     req
     {:title "Daftar"}
-    (register-form))))
+    [:section.container
+     [:div.col-md-6.col-md-offset-3
+      (register-form (get-in req [:flash :errors]))]])))
 
 (defn tentang [req respond _]
   (respond

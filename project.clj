@@ -8,6 +8,7 @@
                  [cljs-ajax "0.7.3"]
                  [compojure "1.6.1"]
                  [day8.re-frame/http-fx "0.1.6"]
+                 [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
@@ -23,7 +24,7 @@
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-ring "0.12.4"]]
 
-  :source-paths ["src/clj"]
+  :source-paths ["src/clj" "src/cljc"]
 
   :resource-paths ["resources"]
 
@@ -37,7 +38,7 @@
   :cljsbuild
   {:builds
    [{:id "dev"
-     :source-paths ["src/cljs"]
+     :source-paths ["src/cljs" "src/cljc"]
      :figwheel {:on-jsload binasoalan.core/mount-root}
      :compiler {:main binasoalan.core
                 :closure-defines {"day8.re_frame.tracing.trace_enabled_QMARK_" true
@@ -47,7 +48,7 @@
                 :preloads [day8.re-frame-10x.preload]
                 :asset-path "js/compiled/out"}}
     {:id "min"
-     :source-paths ["src/cljs"]
+     :source-paths ["src/cljs" "src/cljc"]
      :compiler {:main binasoalan.core
                 :closure-defines {goog.DEBUG false}
                 :output-to "resources/public/js/compiled/app.js"
