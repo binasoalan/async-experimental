@@ -2,75 +2,122 @@
   (:require [hiccup.element :refer [link-to]]
             [hiccup.form :refer [label text-field password-field email-field
                                  submit-button]]
-            [hiccup.page :refer [html5 include-css]]
+            [hiccup.page :refer [html5 include-css include-js]]
             [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
-(defmacro base-html
-  [{:keys [title] :as attr} & contents]
-  (if-not (map? attr)
-    `(base-html {} ~attr ~@contents)
-    `(html5
-      [:head
-       [:meta {:charset "utf-8"}]
-       [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-       [:title (if ~title
-                 (str ~title " | Bina Soalan")
-                 "Bina Soalan")]
-       (include-css "css/style.css")]
-      [:body ~@contents])))
+(defn header []
+  [:header
+   [:a.logo {:href "#"} "Bina Soalan"]
+   [:a.button {:href "/"} "Laman Utama"]
+   [:a.button {:href "/tentang"} "Tentang Kami"]
+   [:a.button {:href "/login"} "Log Masuk"]])
 
-(defn nav []
-  [:nav
-   [:li (link-to "/" "Laman Utama")]
-   [:li (link-to "/tentang" "Tentang Kami")]
-   [:li (link-to "/login" "Log Masuk")]])
+(defn nav [& [current-uri]]
+  [:nav.navbar.navbar-default
+   [:div.navbar-header
+    [:button.navbar-toggle.collapsed {:type "button" :data-toggle "collapse"
+                                      :data-target "#navbar-collapse"
+                                      :aria-expanded "false"}
+     [:span.sr-only "Toggle navigation"]
+     [:span.icon-bar]
+     [:span.icon-bar]
+     [:span.icon-bar]]
+    [:span.navbar-brand "Bina Soalan"]]
+   [:div#navbar-collapse.collapse.navbar-collapse
+    [:ul.nav.navbar-nav
+     [:li {:class (if (= current-uri "/") "active" "")}
+      (link-to "/" "Laman Utama")]
+     [:li {:class (if (= current-uri "/tentang") "active" "")}
+      (link-to "/tentang" "Tentang Kami")]
+     [:li {:class (if (= current-uri "/login") "active" "")}
+      (link-to "/login" "Log Masuk")]]]])
+
+(defn base-html
+  [req {:keys [title] :as attr} & contents]
+  (if-not (map? attr)
+    (apply base-html req {} attr contents)
+    (html5
+     [:head
+      [:meta {:charset "utf-8"}]
+      [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+      [:title (if title
+                (str title " | Bina Soalan")
+                "Bina Soalan")]
+      (include-css
+       "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+       "css/style.css")]
+     [:body
+      (nav (:uri req))
+      contents
+      (include-js
+       "https://code.jquery.com/jquery-3.3.1.slim.min.js"
+       "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js")])))
 
 (defn login-form []
   [:form {:method "post" :action "/login"}
    (anti-forgery-field)
-   (label "username" "Username")
-   (text-field "username")
-   (label "password" "Password")
-   (password-field "password")
-   (submit-button "Login")])
+   [:div.form-group
+    (label "username" "Username")
+    [:input#username.form-control
+     {:type "text" :placeholder "Username" :required true}]]
+   [:div.form-group
+    (label "password" "Password")
+    [:input#password.form-control
+     {:type "password" :placeholder "Password" :required true}]]
+   [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
 (defn register-form []
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
-   (label "username" "Username")
-   (text-field "username")
-   (label "email" "Email")
-   (email-field "email")
-   (label "password" "Password")
-   (password-field "password")
-   (submit-button "Daftar")])
+   [:div.form-group
+    (label "username" "Username")
+    [:input#username.form-control
+     {:type "text" :placeholder "Username" :required true}]]
+   [:div.form-group
+    (label "email" "Email")
+    [:input#email.form-control
+     {:type "email" :placeholder "Email" :required true}]]
+   [:div.form-group
+    (label "password" "Password")
+    [:input#password.form-control
+     {:type "password" :placeholder "Password" :required true}]]
+   [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]])
 
 
 ;; Pages
 
-(defn index [_ respond _]
+(defn index [req respond _]
   (respond
    (base-html
-    [:header
-     [:h1 "Bina Soalan"]]
-    (nav)
-    (register-form))))
+    req
+    [:section.container
+     [:div.col-md-8
+      [:div.jumbotron
+       [:h1 "Bina Soalan"]
+       [:p "I'm bad at copywriting."]]]
+     [:div.col-md-4
+      [:div.panel.panel-default
+       [:div.panel-body
+        (register-form)]]]])))
 
-(defn login [_ respond _]
+(defn login [req respond _]
   (respond
    (base-html
+    req
     {:title "Log Masuk"}
-    [:header
-     [:h1 "Log Masuk"]]
-    (nav)
     (login-form))))
 
-(defn tentang [_ respond _]
+(defn daftar [req respond _]
   (respond
    (base-html
+    req
+    {:title "Daftar"}
+    (register-form))))
+
+(defn tentang [req respond _]
+  (respond
+   (base-html
+    req
     {:title "Tentang Kami"}
-    [:header
-     [:h1 "Tentang Kami"]]
-    (nav)
     [:section
-     [:p "Now we know who you are, I know who I am."]])))
+     [:p "Now that we know who you are, I know who I am."]])))

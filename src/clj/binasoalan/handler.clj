@@ -9,6 +9,7 @@
   (GET "/" [] views/index)
   (GET "/login" [] views/login)
   (POST "/login" [] "Logged in")
+  (GET "/daftar" [] views/daftar)
   (POST "/daftar" [] "Registered")
   (GET "/tentang" [] views/tentang)
   (route/not-found "Not Found"))
