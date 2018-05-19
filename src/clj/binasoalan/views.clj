@@ -69,24 +69,28 @@
 (defn register-form [& [{:keys [username email password] :as errors}]]
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
-   (when username
-     [:div.alert.alert-warning "Invalid username"])
-   (when email
-     [:div.alert.alert-warning "Invalid email"])
-   (when password
-     [:div.alert.alert-warning "Invalid password"])
-   [:div.form-group
-    (label "username" "Username")
+
+   [:div.form-group {:class (if username "has-error" "")}
+    [:label.control-label {:for "username"} "Username"]
     [:input#username.form-control
-     {:type "text" :name "username" :placeholder "Username" :required true}]]
-   [:div.form-group
-    (label "email" "Email")
+     {:type "text" :name "username" :placeholder "Username"}]
+    (when username
+      [:span.help-block "Username tidak boleh kosong."])]
+
+   [:div.form-group {:class (if email "has-error" "")}
+    [:label.control-label {:for "email"} "Email"]
     [:input#email.form-control
-     {:type "email" :name "email" :placeholder "Email" :required true}]]
-   [:div.form-group
-    (label "password" "Password")
+     {:type "text" :name "email" :placeholder "Email"}]
+    (when email
+      [:span.help-block "Email tidak boleh kosong dan mesti dalam bentuk email yang sah."])]
+
+   [:div.form-group {:class (if password "has-error" "")}
+    [:label.control-label {:for "password"} "Password"]
     [:input#password.form-control
-     {:type "password" :name "password" :placeholder "Password" :required true}]]
+     {:type "password" :name "password" :placeholder "Password"}]
+    (when password
+      [:span.help-block "Password tidak boleh kosong."])]
+
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]])
 
 
