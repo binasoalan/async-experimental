@@ -111,7 +111,11 @@
    (base-html
     req
     {:title "Log Masuk"}
-    (login-form))))
+    [:section.container
+     [:div.col-md-4.col-md-offset-4
+      [:div.panel.panel-default
+       [:div.panel-body
+        (login-form)]]]])))
 
 (defn daftar [req respond _]
   (respond
