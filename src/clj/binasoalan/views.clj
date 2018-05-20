@@ -66,7 +66,7 @@
      {:type "password" :name "password" :placeholder "Password" :required true}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
-(defn register-form [& [[errors prev]]]
+(defn register-form [& [{:keys [errors prev]}]]
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
 
@@ -126,13 +126,17 @@
           (login-form)]]]]))))
 
 (defn daftar [req respond _]
-  (respond
-   (base-html
-    req
-    {:title "Daftar"}
-    [:section.container
-     [:div.col-md-6.col-md-offset-3
-      (register-form (:flash req))]])))
+  (let [message (:message (:flash req))]
+    (respond
+     (base-html
+      req
+      {:title "Daftar"}
+      [:section.container
+       [:div.col-md-6.col-md-offset-3
+        (when message
+          [:div.alert.alert-danger
+           message])
+        (register-form (:flash req))]]))))
 
 (defn tentang [req respond _]
   (respond
