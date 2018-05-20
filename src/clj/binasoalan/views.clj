@@ -66,7 +66,7 @@
      {:type "password" :name "password" :placeholder "Password" :required true}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
-(defn register-form [& [{:keys [errors prev]}]]
+(defn register-form [& [{:keys [errors data]}]]
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
 
@@ -74,14 +74,14 @@
     [:label.control-label {:for "username"} "Username"]
     [:input#username.form-control
      {:type "text" :name "username" :placeholder "Username"
-      :value (:username prev)}]
+      :value (:username data)}]
     (when (:username errors)
       [:span.help-block "Username tidak boleh kosong."])]
 
    [:div.form-group {:class (if (:email errors) "has-error" "")}
     [:label.control-label {:for "email"} "Email"]
     [:input#email.form-control
-     {:type "text" :name "email" :placeholder "Email" :value (:email prev)}]
+     {:type "text" :name "email" :placeholder "Email" :value (:email data)}]
     (when (:email errors)
       [:span.help-block "Email mesti dalam bentuk email yang sah dan tidak boleh kosong."])]
 
