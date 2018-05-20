@@ -66,29 +66,30 @@
      {:type "password" :name "password" :placeholder "Password" :required true}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
-(defn register-form [& [{:keys [username email password] :as errors}]]
+(defn register-form [& [[errors prev]]]
   [:form {:method "post" :action "/daftar"}
    (anti-forgery-field)
 
-   [:div.form-group {:class (if username "has-error" "")}
+   [:div.form-group {:class (if (:username errors) "has-error" "")}
     [:label.control-label {:for "username"} "Username"]
     [:input#username.form-control
-     {:type "text" :name "username" :placeholder "Username"}]
-    (when username
+     {:type "text" :name "username" :placeholder "Username"
+      :value (:username prev)}]
+    (when (:username errors)
       [:span.help-block "Username tidak boleh kosong."])]
 
-   [:div.form-group {:class (if email "has-error" "")}
+   [:div.form-group {:class (if (:email errors) "has-error" "")}
     [:label.control-label {:for "email"} "Email"]
     [:input#email.form-control
-     {:type "text" :name "email" :placeholder "Email"}]
-    (when email
-      [:span.help-block "Email tidak boleh kosong dan mesti dalam bentuk email yang sah."])]
+     {:type "text" :name "email" :placeholder "Email" :value (:email prev)}]
+    (when (:email errors)
+      [:span.help-block "Email mesti dalam bentuk email yang sah dan tidak boleh kosong."])]
 
-   [:div.form-group {:class (if password "has-error" "")}
+   [:div.form-group {:class (if (:password errors) "has-error" "")}
     [:label.control-label {:for "password"} "Password"]
     [:input#password.form-control
      {:type "password" :name "password" :placeholder "Password"}]
-    (when password
+    (when (:password errors)
       [:span.help-block "Password tidak boleh kosong."])]
 
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]])
@@ -111,15 +112,18 @@
         (register-form)]]]])))
 
 (defn login [req respond _]
-  (respond
-   (base-html
-    req
-    {:title "Log Masuk"}
-    [:section.container
-     [:div.col-md-4.col-md-offset-4
-      [:div.panel.panel-default
-       [:div.panel-body
-        (login-form)]]]])))
+  (let [msg (:flash req)]
+    (respond
+     (base-html
+      req
+      {:title "Log Masuk"}
+      [:section.container
+       [:div.col-md-4.col-md-offset-4
+        (when msg
+          [:div.alert.alert-success msg])
+        [:div.panel.panel-default
+         [:div.panel-body
+          (login-form)]]]]))))
 
 (defn daftar [req respond _]
   (respond
@@ -128,7 +132,7 @@
     {:title "Daftar"}
     [:section.container
      [:div.col-md-6.col-md-offset-3
-      (register-form (get-in req [:flash :errors]))]])))
+      (register-form (:flash req))]])))
 
 (defn tentang [req respond _]
   (respond
