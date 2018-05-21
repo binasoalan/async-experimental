@@ -52,11 +52,10 @@
         (conj all already-existed))))
 
 (defn- check-existing-user [user-check]
-  (go (let [[errors user already-existed-chan :as all] (<! user-check)
-            already-existed (<! already-existed-chan)]
+  (go (let [[errors user already-existed :as all] (<! user-check)]
         (cond
           errors all
-          already-existed [{:message user-existed-msg} user]
+          (<! already-existed) [{:message user-existed-msg} user]
           :else all))))
 
 (defn- hash-user-password [new-user]
