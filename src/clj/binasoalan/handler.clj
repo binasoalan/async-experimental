@@ -60,11 +60,10 @@
           :else all))))
 
 (defn- hash-user-password [new-user]
-  (go (let [[errors user :as all] (<! new-user)
-            hashed-user (async/thread (update user :password hashers/derive))]
+  (go (let [[errors user :as all] (<! new-user)]
         (if errors
           all
-          [errors hashed-user]))))
+          [errors (async/thread (update user :password hashers/derive))]))))
 
 (defn- persist-user [new-user]
   (go (let [[errors hashed-user :as all] (<! new-user)]
