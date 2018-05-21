@@ -3,7 +3,8 @@
             [binasoalan.validation :as v]
             [binasoalan.views :as views]
             [buddy.hashers :as hashers]
-            [clojure.core.async :as async :refer [go chan >! <! alts! timeout]]
+            [clojure.core.async :as async :refer [go chan >! <!
+                                                  alts! timeout put!]]
             [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
@@ -13,10 +14,12 @@
           :email "ali@yahoo.com"})
 
 (defn find-user-by-username [username]
+  (Thread/sleep 1000)
   (when (= username "ali")
     ali))
 
 (defn find-user-by-email [email]
+  (Thread/sleep 1000)
   (when (= email "ali@yahoo.com")
     ali))
 
@@ -28,44 +31,70 @@
     [{:errors errors :data data} data]
     [nil data]))
 
-(defn- hash-user-password [[errors user :as all]]
-  (if errors
-    all
-    [errors (update user :password hashers/derive)]))
-
-(defn- make-response [[errors _]]
-  (if errors
-    (-> (redirect "/daftar")
-        (flash errors))
-    (-> (redirect "/login")
-        (flash success-msg))))
-
 (def validate-xform
   (comp
    (map v/validate-registration)
    (map make-flash-msg)))
 
+(defn- validate [form]
+  (let [validated (chan 1 validate-xform)]
+    (put! validated form)
+    validated))
+
+(defn- find-existing-user [validated]
+  (go (let [[errors user :as all] (<! validated)
+            already-existed (chan)]
+        (if errors
+          (put! already-existed false)
+          (let [by-username (async/thread (find-user-by-username (:username user)))
+                by-email (async/thread (find-user-by-email (:email user)))]
+            (put! already-existed (boolean (or (<! by-username) (<! by-email))))))
+        (conj all already-existed))))
+
+(defn- check-existing-user [user-check]
+  (go (let [[errors user already-existed-chan :as all] (<! user-check)
+            already-existed (<! already-existed-chan)]
+        (cond
+          errors all
+          already-existed [{:message user-existed-msg} user]
+          :else all))))
+
+(defn- hash-user-password [new-user]
+  (go (let [[errors user :as all] (<! new-user)
+            hashed-user (async/thread (update user :password hashers/derive))]
+        (if errors
+          all
+          [errors hashed-user]))))
+
+(defn- persist-user [new-user]
+  (go (let [[errors hashed-user :as all] (<! new-user)]
+        (if errors
+          all
+          (do
+            (println "Registered: " (<! hashed-user))
+            all)))))
+
+(defn- make-response [registered]
+  (go (let [[errors _] (<! registered)]
+        (if errors
+          (-> (redirect "/daftar")
+              (flash errors))
+          (-> (redirect "/login")
+              (flash success-msg))))))
+
 (def register-xform
   (comp
+   (map validate)
+   (map find-existing-user)
+   (map check-existing-user)
    (map hash-user-password)
-   ;; TODO: Add one more function here in the middle to persist user
+   (map persist-user)
    (map make-response)))
 
 (defn register [{:keys [params]} respond _]
-  (let [validated (chan 1 validate-xform)
-        result (chan 1 register-xform)]
-    (go (>! validated (select-keys params [:username :email :password])))
-    (go (let [[errors user :as all] (<! validated)]
-          (cond
-            ;; If already has errors, skip checking for existing user.
-            errors (>! result all)
-            ;; Check for existing user with same username or email.
-            (or (<! (async/thread (find-user-by-username (:username user))))
-                (<! (async/thread (find-user-by-email (:email user)))))
-            (>! result [{:message user-existed-msg} user])
-            ;; Return same data if there is no problem.
-            :else (>! result all))))
-    (go (let [[res _] (alts! [result (timeout 10000)])]
+  (let [form (select-keys params [:username :email :password])
+        [response] (eduction register-xform [form])]
+    (go (let [[res _] (alts! [response (timeout 10000)])]
           (respond res)))))
 
 (defroutes app-routes
