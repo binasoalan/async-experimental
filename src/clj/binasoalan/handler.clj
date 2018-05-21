@@ -65,7 +65,8 @@
             (>! result [{:message user-existed-msg} user])
             ;; Return same data if there is no problem.
             :else (>! result all))))
-    (go (respond (<! result)))))
+    (go (let [[res _] (alts! [result (timeout 10000)])]
+          (respond res)))))
 
 (defroutes app-routes
   (GET "/" [] views/index)
