@@ -1,15 +1,11 @@
-(ns binasoalan.handler
+(ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
-            [binasoalan.db.users :as users]
             [binasoalan.utils :refer [flash]]
             [binasoalan.validation :as v]
-            [binasoalan.views :as views]
+            [binasoalan.db.users :as users]
             [buddy.hashers :as hashers]
             [clojure.core.async :as async :refer [go chan >! <!
                                                   alts! timeout put!]]
-            [compojure.core :refer :all]
-            [compojure.route :as route]
-            [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.util.response :refer :all]))
 
 (def user-existed-msg "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain.")
@@ -88,16 +84,3 @@
         [response] (eduction register-xform [form])]
     (go (let [[res _] (alts! [response (timeout 10000)])]
           (respond res)))))
-
-(defroutes app-routes
-  (GET "/" [] views/index)
-  (GET "/login" [] views/login)
-  (GET "/daftar" [] views/daftar)
-  (GET "/tentang" [] views/tentang)
-  (POST "/login" [] "Logged in")
-  (POST "/daftar" [] register)
-  (route/not-found "Not Found"))
-
-(def app
-  (-> app-routes
-      (wrap-defaults site-defaults)))

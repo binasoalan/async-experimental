@@ -32,7 +32,7 @@
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
-  :ring {:handler binasoalan.handler/app
+  :ring {:handler binasoalan.core/app
          :async? true}
 
   :figwheel {:css-dirs ["resources/public/css"]}
