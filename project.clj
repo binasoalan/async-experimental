@@ -6,6 +6,7 @@
 
   :dependencies [[buddy "2.0.0"]
                  [cljs-ajax "0.7.3"]
+                 [com.draines/postal "2.0.2"]
                  [com.layerware/hugsql "0.4.8"]
                  [compojure "1.6.1"]
                  [day8.re-frame/http-fx "0.1.6"]
@@ -14,6 +15,7 @@
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/core.async "0.4.474"]
+                 [org.clojure/java.jdbc "0.7.6"]
                  [org.eclipse.jetty/jetty-server "9.4.9.v20180320"]
                  [org.postgresql/postgresql "42.2.2"]
                  [re-frame "0.10.5"]

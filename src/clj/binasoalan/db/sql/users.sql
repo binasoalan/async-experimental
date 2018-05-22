@@ -18,3 +18,10 @@ where username = :username
 -- :doc Find user by email
 select * from users
 where email = :email
+
+-- :name verify-email
+-- :command :execute
+-- :result :affected
+-- :doc Update verified status of user to true given the token
+update users set verified = true
+where email = (select email from email_verifications where token = :token)
