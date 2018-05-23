@@ -21,14 +21,13 @@
   (recur))
 
 (defn send-email-verification [{:keys [email token]}]
-  (async/thread
-    (let [from-email default-from-email
-          to-email email
-          subject "Sahkan email anda"
-          body (str "Klik link ini untuk mengesahkan email anda: "
-                    "http://localhost:3000/sahkan?token=" token)
-          status (postal/send-message host {:from from-email
-                                            :to to-email
-                                            :subject subject
-                                            :body body})]
-      (>!! email-log [from-email to-email subject status]))))
+  (let [from-email default-from-email
+        to-email email
+        subject "Sahkan email anda"
+        body (str "Klik link ini untuk mengesahkan email anda: "
+                  "http://localhost:3000/sahkan?token=" token)
+        status (postal/send-message host {:from from-email
+                                          :to to-email
+                                          :subject subject
+                                          :body body})]
+    (>!! email-log [from-email to-email subject status])))
