@@ -12,6 +12,7 @@
                  [day8.re-frame/http-fx "0.1.6"]
                  [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
+                 [hikari-cp "2.4.0"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/core.async "0.4.474"]
