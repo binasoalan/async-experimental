@@ -17,9 +17,9 @@
        (insert-verification tx user))))
 
 (defn verify-user
-  "Verify user by setting verified to true. token is the token string. Returns
-  number of rows affected."
+  "Verify user by setting verified to true. token must be a hashmap
+  containing :token. Returns number of rows affected."
   [db-spec token]
   (jdbc/with-db-transaction [tx db-spec]
-    (+ (verify-email tx {:token token})
-       (delete-verification tx {:token token}))))
+    (+ (verify-email tx token)
+       (delete-verification tx token))))

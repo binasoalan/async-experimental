@@ -157,8 +157,8 @@
 
 (async/thread
   (loop []
-    (let [{:keys [token]} (<!! token-chan)
-          valid-token (users/find-token db-spec {:token token})]
+    (let [{input-token :token} (<!! token-chan)
+          {valid-token :token} (users/find-token db-spec {:token input-token})]
       (if valid-token
         (>!! valid-token-chan {:token valid-token})
         (>!! v-response-chan {:response (redirect "/login")}))
@@ -166,8 +166,9 @@
 
 (async/thread
   (loop []
-    (let [{:keys [token]} (<!! valid-token-chan)
-          row-count (users/verify-user db-spec token)]
+    (let [valid-token (<!! valid-token-chan)
+          ;; valid-token is already a hashmap {:token token}
+          row-count (users/verify-user db-spec valid-token)]
       (if (zero? row-count)
         (>!! v-response-chan {:response (redirect "/login")})
         (>!! v-response-chan {:response "Verified"}))
