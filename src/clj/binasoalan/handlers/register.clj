@@ -154,32 +154,23 @@
 
 (def no-token-msg "No token supplied.")
 
-(defn- get-token [params]
-  (go (let [{:keys [token]} params]
-        (if token
-          [nil token]
-          [{:message no-token-msg} nil]))))
+(def token-chan (chan))
+(def v-response-chan (chan))
 
-(defn- verify-email [token-chan]
-  (go (let [[errors token :as all] (<! token-chan)]
-        (if errors
-          all
-          (conj all (async/thread (users/verify-user db-spec token)))))))
-
-(defn- make-verify-response [result-chan]
-  (go (let [[errors _ rows-count] (<! result-chan)]
-        (cond
-          errors (redirect "/login")
-          (zero? (<! rows-count)) (redirect "/login")
-          :else "Verified"))))
-
-(def x-verify
-  (comp
-   (map get-token)
-   (map verify-email)
-   (map make-verify-response)))
+(async/thread
+  (loop []
+    (let [{:keys [token]} (<!! token-chan)
+          row-count (users/verify-user db-spec token)]
+      (if (zero? row-count)
+        (>!! v-response-chan {:response (redirect "/login")})
+        (>!! v-response-chan {:response "Verified"}))
+      (recur))))
 
 (defn verify [{:keys [params]} respond _]
-  (let [[response] (eduction x-verify [params])]
-    (go (let [[res _] (alts! [response (timeout 10000)])]
-          (respond res)))))
+  (let [token (:token params)]
+    (if (nil? token)
+      (respond (redirect "/login"))
+      (do
+        (put! token-chan {:msg-type :token :token token})
+        (go (let [[res _] (alts! [v-response-chan (timeout 10000)])]
+              (respond (:response res))))))))
