@@ -7,18 +7,17 @@
             [buddy.hashers :as hashers]
             [buddy.core.codecs :as codecs]
             [buddy.core.nonce :as nonce]
-            [clojure.core.async :as async :refer [go chan mult tap >! <! <!! >!!
+            [clojure.core.async :as async :refer [go chan >! <! <!! >!!
                                                   alts! timeout put! go-loop
                                                   pub sub]]
             [ring.util.response :refer :all]))
 
+(def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
+          :success "Anda sudah berjaya mendaftar. Sila log masuk."
+          :failed "Pendaftaran gagal. Sila cuba semula."})
+
 
 ;; User registration
-
-(def user-existed-msg "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain.")
-(def success-msg "Anda sudah berjaya mendaftar. Sila log masuk .")
-(def failed-msg "Pendaftaran gagal. Sila cuba semula.")
-
 
 (def pub-chan (chan))
 (def publication (pub pub-chan :msg-type))
@@ -78,7 +77,7 @@
       (if user-existed
         (>! pub-chan {:msg-type :response
                       :response (-> (redirect "/daftar")
-                                    (flash {:message user-existed-msg}))})
+                                    (flash {:message (:user-existed msg)}))})
         (>! pub-chan {:msg-type :new-user :user form}))
       (recur))))
 
@@ -122,7 +121,7 @@
         (if (zero? row-count)
           (>!! pub-chan {:msg-type :response
                          :response (-> (redirect "/daftar")
-                                       (flash {:message failed-msg}))})
+                                       (flash {:message (:failed msg)}))})
           (>!! pub-chan {:msg-type :persisted-user :user user}))
         (recur)))))
 
@@ -140,7 +139,7 @@
     (<! persisted-user-chan)
     (>! pub-chan {:msg-type :response
                   :response (-> (redirect "/login")
-                                (flash success-msg))})
+                                (flash (:success msg)))})
     (recur)))
 
 (defn register [{:keys [params]} respond _]
@@ -151,8 +150,6 @@
 
 
 ;; Email verification
-
-(def no-token-msg "No token supplied.")
 
 (def token-chan (chan))
 (def v-response-chan (chan))
