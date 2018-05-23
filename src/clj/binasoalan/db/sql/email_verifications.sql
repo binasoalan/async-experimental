@@ -11,3 +11,9 @@ values (:token, :email)
 -- :doc Delete email verification returning affected row count
 delete from email_verifications
 where token = :token
+
+-- :name find-token
+-- :command :query
+-- :result :one
+select token from email_verifications
+where token = :token

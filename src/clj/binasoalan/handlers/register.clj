@@ -152,11 +152,21 @@
 ;; Email verification
 
 (def token-chan (chan))
+(def valid-token-chan (chan))
 (def v-response-chan (chan))
 
 (async/thread
   (loop []
     (let [{:keys [token]} (<!! token-chan)
+          valid-token (users/find-token db-spec {:token token})]
+      (if valid-token
+        (>!! valid-token-chan {:token valid-token})
+        (>!! v-response-chan {:response (redirect "/login")}))
+      (recur))))
+
+(async/thread
+  (loop []
+    (let [{:keys [token]} (<!! valid-token-chan)
           row-count (users/verify-user db-spec token)]
       (if (zero? row-count)
         (>!! v-response-chan {:response (redirect "/login")})
