@@ -168,6 +168,6 @@
     (if (nil? token)
       (respond (redirect "/login"))
       (do
-        (put! token-chan {:msg-type :token :token token})
+        (put! token-chan {:token token})
         (go (let [[res _] (alts! [v-response-chan (timeout 10000)])]
               (respond (:response res))))))))
