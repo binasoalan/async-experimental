@@ -13,7 +13,7 @@
             [ring.util.response :refer :all]))
 
 (def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
-          :success "Anda sudah berjaya mendaftar. Sila log masuk."
+          :success "Anda sudah berjaya mendaftar. Sila check email untuk mengesahkan email anda."
           :failed "Pendaftaran gagal. Sila cuba semula."})
 
 
@@ -171,7 +171,7 @@
           row-count (users/verify-user db-spec valid-token)]
       (if (zero? row-count)
         (>!! v-response-chan {:response (redirect "/login")})
-        (>!! v-response-chan {:response "Verified"}))
+        (>!! v-response-chan {:response (redirect "/verified")}))
       (recur))))
 
 (defn verify [{:keys [params]} respond _]

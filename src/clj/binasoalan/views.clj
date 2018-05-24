@@ -139,6 +139,20 @@
       (register-form (:flash req))]]))
   ([req respond _] (respond (daftar req))))
 
+(defn verified
+  ([req]
+   (base-html
+    req
+    {:title "Email telah disahkan"}
+    [:section.container
+     [:div.col-md-6.col-md-offset-3
+      [:div.panel.panel-default
+       [:div.panel-body.text-center
+        [:p
+         "Email anda telah disahkan. Anda boleh log in."]
+        [:p [:a {:href "/login"} "Klik di sini untuk log in"]]]]]]))
+  ([req respond _] (respond (verified req))))
+
 (defn tentang
   ([req]
    (base-html

@@ -12,6 +12,7 @@
   (GET "/daftar" [] views/daftar)
   (GET "/tentang" [] views/tentang)
   (GET "/sahkan" [] verify)
+  (GET "/verified" [] views/verified)
   (POST "/login" [] "Logged in")
   (POST "/daftar" [] register)
   (route/not-found "Not Found"))
