@@ -8,8 +8,8 @@
             [buddy.core.codecs :as codecs]
             [buddy.core.nonce :as nonce]
             [clojure.core.async :as async :refer [go chan >! <! <!! >!!
-                                                  alts! timeout put! go-loop
-                                                  pub sub]]
+                                                  alts! timeout put!
+                                                  thread take!]]
             [ring.util.response :refer :all]))
 
 (def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
@@ -19,166 +19,83 @@
 
 ;; User registration
 
-(def pub-chan (chan))
-(def publication (pub pub-chan :msg-type))
+(defn- validate-form [[response-chan form]]
+  (let [form-chan (chan)]
+    (go
+      (let [[errors valid-form] (v/validate-registration form)]
+        (if errors
+          (>! response-chan (-> (redirect "/daftar")
+                                (flash {:errors errors :data form})))
+          (>! form-chan form))))
+    [response-chan form-chan]))
 
-(def response-chan (chan))
-(sub publication :response response-chan)
+(defn- check-existing-user [[response-chan form-chan]]
+  (let [user-chan (chan)]
+    (go
+      (let [form (<! form-chan)
+            by-username (thread (users/find-user-by-username db-spec form))
+            by-email (thread (users/find-user-by-email db-spec form))
+            already-existed? (or (<! by-username) (<! by-email))]
+        (if already-existed?
+          (>! response-chan (-> (redirect "/daftar")
+                                (flash {:message (:user-existed msg)})))
+          (>! user-chan form))))
+    [response-chan user-chan]))
 
-(let [raw-input-chan (chan)]
-  (sub publication :raw-input raw-input-chan)
-  (go-loop []
-    (let [{:keys [form]} (<! raw-input-chan)
-          [errors valid-form] (v/validate-registration form)]
-      (if errors
-        (>! pub-chan {:msg-type :response
-                      :response (-> (redirect "/daftar")
-                                    (flash {:errors errors :data form}))})
-        (>! pub-chan {:msg-type :valid-form :form valid-form}))
-      (recur))))
+(defn- persist-user [[response-chan user-chan]]
+  (go
+    (let [user (-> (<! user-chan)
+                   (update :password hashers/derive)
+                   (assoc :token (codecs/bytes->hex (nonce/random-bytes 16))))
+          failed? (zero? (<! (thread (users/register-user db-spec user))))]
+      (if failed?
+        (>! response-chan (-> (redirect "/daftar")
+                              (flash {:message (:failed msg)})))
+        (do
+          (future (mailer/send-email-verification user))
+          (>! response-chan (-> (redirect "/login")
+                                (flash {:message (:success msg)}))))))))
 
-(let [valid-form-chan (chan)]
-  (sub publication :valid-form valid-form-chan)
-  (async/thread
-    (loop []
-      (let [{:keys [form]} (<!! valid-form-chan)
-            existing-username (users/find-user-by-username db-spec form)]
-        (>!! pub-chan
-             {:msg-type :existing-username :existing-username existing-username})
-        (recur)))))
-
-(let [valid-form-chan (chan)]
-  (sub publication :valid-form valid-form-chan)
-  (async/thread
-    (loop []
-      (let [{:keys [form]} (<!! valid-form-chan)
-            existing-email (users/find-user-by-email db-spec form)]
-        (>!! pub-chan {:msg-type :existing-email :existing-email existing-email})
-        (recur)))))
-
-(let [existing-username-chan (chan)
-      existing-email-chan (chan)]
-  (sub publication :existing-username existing-username-chan)
-  (sub publication :existing-email existing-email-chan)
-  (go-loop []
-    (let [{:keys [existing-username]} (<! existing-username-chan)
-          {:keys [existing-email]} (<! existing-email-chan)
-          user-existed (boolean (or existing-username existing-email))]
-      (>! pub-chan {:msg-type :whether-user-existed :user-existed user-existed})
-      (recur))))
-
-(let [whether-user-existed-chan (chan)
-      valid-form-chan (chan)]
-  (sub publication :whether-user-existed whether-user-existed-chan)
-  (sub publication :valid-form valid-form-chan)
-  (go-loop []
-    (let [{:keys [user-existed]} (<! whether-user-existed-chan)
-          {:keys [form]} (<! valid-form-chan)]
-      (if user-existed
-        (>! pub-chan {:msg-type :response
-                      :response (-> (redirect "/daftar")
-                                    (flash {:message (:user-existed msg)}))})
-        (>! pub-chan {:msg-type :new-user :user form}))
-      (recur))))
-
-(let [new-user-chan (chan)]
-  (sub publication :new-user new-user-chan)
-  (async/thread
-    (loop []
-      (let [{:keys [password]} (:user (<!! new-user-chan))
-            hashed-password (hashers/derive password)]
-        (>!! pub-chan {:msg-type :hashed-password :password hashed-password})
-        (recur)))))
-
-(let [new-user-chan (chan)]
-  (sub publication :new-user new-user-chan)
-  (go-loop []
-    (<! new-user-chan)
-    (let [token (codecs/bytes->hex (nonce/random-bytes 16))]
-      (>! pub-chan {:msg-type :email-verification-token :token token}))
-    (recur)))
-
-(let [hashed-password-chan (chan)
-      email-verification-token-chan (chan)
-      new-user-chan (chan)]
-  (sub publication :hashed-password hashed-password-chan)
-  (sub publication :email-verification-token email-verification-token-chan)
-  (sub publication :new-user new-user-chan)
-  (go-loop []
-    (let [{:keys [user]} (<! new-user-chan)
-          {:keys [password]} (<! hashed-password-chan)
-          {:keys [token]} (<! email-verification-token-chan)
-          prepared-user (assoc user :password password :token token)]
-      (>! pub-chan {:msg-type :prepared-user :user prepared-user})
-      (recur))))
-
-(let [prepared-user-chan (chan)]
-  (sub publication :prepared-user prepared-user-chan)
-  (async/thread
-    (loop []
-      (let [{:keys [user]} (<!! prepared-user-chan)
-            row-count (users/register-user db-spec user)]
-        (if (zero? row-count)
-          (>!! pub-chan {:msg-type :response
-                         :response (-> (redirect "/daftar")
-                                       (flash {:message (:failed msg)}))})
-          (>!! pub-chan {:msg-type :persisted-user :user user}))
-        (recur)))))
-
-(let [persisted-user-chan (chan)]
-  (sub publication :persisted-user persisted-user-chan)
-  (async/thread
-    (loop []
-      (let [{:keys [user]} (<!! persisted-user-chan)]
-        (mailer/send-email-verification user)
-        (recur)))))
-
-(let [persisted-user-chan (chan)]
-  (sub publication :persisted-user persisted-user-chan)
-  (go-loop []
-    (<! persisted-user-chan)
-    (>! pub-chan {:msg-type :response
-                  :response (-> (redirect "/login")
-                                (flash {:message (:success msg)}))})
-    (recur)))
-
-(defn register [{:keys [params]} respond _]
-  (let [form (select-keys params [:username :email :password])]
-    (go (let [[res _] (alts! [response-chan (timeout 10000)])]
-          (respond (:response res))))
-    (put! pub-chan {:msg-type :raw-input :form form})))
+(defn register-handler [{:keys [params] :as req} respond _]
+  (let [response-chan (chan)
+        form (select-keys params [:username :email :password])]
+    (go
+      (->> [response-chan form]
+           validate-form
+           check-existing-user
+           persist-user))
+    (go (respond (<! response-chan)))))
 
 
 ;; Email verification
 
-(def token-chan (chan))
-(def valid-token-chan (chan))
-(def v-response-chan (chan))
+(defn- check-token [[response-chan token :as param]]
+  (let [token-chan (chan)]
+    (go
+      (let [not-token? (->> (thread (users/find-token db-spec {:token token}))
+                            <!
+                            :token
+                            nil?)]
+        (if not-token?
+          (>! response-chan (redirect "/login"))
+          (>! token-chan token))))
+    [response-chan token-chan]))
 
-(async/thread
-  (loop []
-    (let [{input-token :token} (<!! token-chan)
-          {valid-token :token} (users/find-token db-spec {:token input-token})]
-      (if valid-token
-        (>!! valid-token-chan {:token valid-token})
-        (>!! v-response-chan {:response (redirect "/login")}))
-      (recur))))
+(defn- verify [[response-chan token-chan]]
+  (go
+    (let [token (<! token-chan)
+          verified? (pos? (<! (thread
+                                (users/verify-user db-spec {:token token}))))]
+      (if verified?
+        (>! response-chan (redirect "/verified"))
+        (>! response-chan (redirect "/login"))))))
 
-(async/thread
-  (loop []
-    (let [valid-token (<!! valid-token-chan)
-          ;; valid-token is already a hashmap {:token token}
-          row-count (users/verify-user db-spec valid-token)]
-      (if (zero? row-count)
-        (>!! v-response-chan {:response (redirect "/login")})
-        (>!! v-response-chan {:response (redirect "/verified")}))
-      (recur))))
-
-(defn verify [{:keys [params]} respond _]
-  (let [token (:token params)]
-    (if (nil? token)
-      (respond (redirect "/login"))
-      (do
-        (put! token-chan {:token token})
-        (go (let [[res _] (alts! [v-response-chan (timeout 10000)])]
-              (respond (:response res))))))))
+(defn verify-handler [{{token :token} :params :as req} respond _]
+  (if (nil? token)
+    (redirect "/login")
+    (let [response-chan (chan)]
+      (go
+        (->> [response-chan token]
+             check-token
+             verify))
+      (go (respond (<! response-chan))))))
