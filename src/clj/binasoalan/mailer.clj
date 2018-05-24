@@ -4,6 +4,8 @@
             [environ.core :refer [env]]
             [postal.core :as postal]))
 
+(def debug? (:debug env false))
+
 (def user (config/decrypt (:email-username env)))
 (def pass (config/decrypt (:email-password env)))
 
@@ -14,6 +16,7 @@
            :port 465})
 
 (def default-from-email "burhanclj@gmail.com")
+(def default-to-email "burhanclj@gmail.com")
 
 (def email-log (chan))
 
@@ -27,7 +30,7 @@
 
 (defn send-email-verification [{:keys [email token]}]
   (let [from-email default-from-email
-        to-email email
+        to-email (if debug? default-to-email email)
         subject "Sahkan email anda"
         body (str "Klik link ini untuk mengesahkan email anda: "
                   "http://localhost:3000/sahkan?token=" token)
