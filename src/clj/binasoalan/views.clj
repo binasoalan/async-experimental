@@ -97,8 +97,8 @@
 
 ;; Pages
 
-(defn index [req respond _]
-  (respond
+(defn index
+  ([req]
    (base-html
     req
     [:section.container
@@ -109,39 +109,41 @@
      [:div.col-md-4
       [:div.panel.panel-default
        [:div.panel-body
-        (register-form)]]]])))
+        (register-form)]]]]))
+  ([req respond _] (respond (index req))))
 
-(defn login [req respond _]
-  (let [msg (:flash req)]
-    (respond
-     (base-html
-      req
-      {:title "Log Masuk"}
-      [:section.container
-       [:div.col-md-4.col-md-offset-4
-        (when msg
-          [:div.alert.alert-success msg])
-        [:div.panel.panel-default
-         [:div.panel-body
-          (login-form)]]]]))))
+(defn login
+  ([{{message :message} :flash :as req}]
+   (base-html
+    req
+    {:title "Log Masuk"}
+    [:section.container
+     [:div.col-md-4.col-md-offset-4
+      (when message
+        [:div.alert.alert-success message])
+      [:div.panel.panel-default
+       [:div.panel-body
+        (login-form)]]]]))
+  ([req respond _] (respond (login req))))
 
-(defn daftar [req respond _]
-  (let [message (:message (:flash req))]
-    (respond
-     (base-html
-      req
-      {:title "Daftar"}
-      [:section.container
-       [:div.col-md-6.col-md-offset-3
-        (when message
-          [:div.alert.alert-danger
-           message])
-        (register-form (:flash req))]]))))
+(defn daftar
+  ([{{message :message} :flash :as req}]
+   (base-html
+    req
+    {:title "Daftar"}
+    [:section.container
+     [:div.col-md-6.col-md-offset-3
+      (when message
+        [:div.alert.alert-danger
+         message])
+      (register-form (:flash req))]]))
+  ([req respond _] (respond (daftar req))))
 
-(defn tentang [req respond _]
-  (respond
+(defn tentang
+  ([req]
    (base-html
     req
     {:title "Tentang Kami"}
     [:section
-     [:p "Now that we know who you are, I know who I am."]])))
+     [:p "Now that we know who you are, I know who I am."]]))
+  ([req respond _] (respond (tentang req))))

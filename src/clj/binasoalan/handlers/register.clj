@@ -139,7 +139,7 @@
     (<! persisted-user-chan)
     (>! pub-chan {:msg-type :response
                   :response (-> (redirect "/login")
-                                (flash (:success msg)))})
+                                (flash {:message (:success msg)}))})
     (recur)))
 
 (defn register [{:keys [params]} respond _]
