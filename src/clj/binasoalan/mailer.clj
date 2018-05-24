@@ -1,10 +1,15 @@
 (ns binasoalan.mailer
-  (:require [clojure.core.async :as async :refer [go-loop >!! <! chan]]
+  (:require [binasoalan.config :as config]
+            [clojure.core.async :as async :refer [go-loop >!! <! chan]]
+            [environ.core :refer [env]]
             [postal.core :as postal]))
 
+(def user (config/decrypt (:email-username env)))
+(def pass (config/decrypt (:email-password env)))
+
 (def host {:host "smtp.gmail.com"
-           :user "burhanloey@gmail.com"
-           :pass ""
+           :user user
+           :pass pass
            :ssl true
            :port 465})
 

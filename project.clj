@@ -10,6 +10,7 @@
                  [com.layerware/hugsql "0.4.8"]
                  [compojure "1.6.1"]
                  [day8.re-frame/http-fx "0.1.6"]
+                 [environ "1.1.0"]
                  [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
                  [hikari-cp "2.4.0"]
@@ -28,6 +29,7 @@
                  [secretary "1.2.3"]]
 
   :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-environ "1.1.0"]
             [lein-ring "0.12.4"]]
 
   :source-paths ["src/clj" "src/cljc"]
