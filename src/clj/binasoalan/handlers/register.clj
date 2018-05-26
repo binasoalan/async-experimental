@@ -17,27 +17,46 @@
 
 ;; User registration
 
-(defn- check-existing-user [[_ form] out-ch]
+(defn- check-existing-user
+  "Check whether username or email already existed. The result is a vector where
+  the first value is a boolean indicating username/email already existed, and
+  the second value is the form previously used to check. The result is pipelined
+  to out-ch channel supplied in second parameter."
+  [[_ form] out-ch]
   (->> [(async/thread (users/find-user-by-username db-spec form))
         (async/thread (users/find-user-by-email db-spec form))]
        (async/merge)
        (async/reduce #(boolean (or %1 %2)) false)
        (async/pipeline 1 out-ch (map #(vector % form)))))
 
-(defn- generate-token []
+(defn- generate-token
+  "Generate nonce as hexstring."
+  []
   (codecs/bytes->hex (nonce/random-bytes 16)))
 
-(defn- persist-user [[_ user] out-ch]
+(defn- persist-user
+  "Persist user into the database with hashed password and generated email
+  verification token. The result is a vector where the first value is a boolean
+  indicating whether database entries are added, and the second value is the
+  user hashmap that was used to store in the database. The result is pipelined
+  to out-ch channel supplied in second parameter."
+  [[_ user] out-ch]
   (let [prepared-user (-> user
                           (update :password hashers/derive)
                           (assoc :token (generate-token)))]
     (->> (async/thread (users/register-user db-spec prepared-user))
          (async/pipeline 1 out-ch (map #(vector (zero? %) prepared-user))))))
 
-(defn- split-if-error [ch]
+(defn- split-if-error
+  "Split the channel if the value from the channel contains error."
+  [ch]
   (async/split first ch))
 
-(defn register-handler [{:keys [params] :as req} respond _]
+(defn register-handler
+  "Handler for user registration. The process goes through validation, checking
+  for availability, and persisting data phases. When successful, email
+  verification will be sent."
+  [{:keys [params] :as req} respond _]
   (let [input-ch (chan 1 (map v/validate-registration))
         [invalid-ch valid-ch] (split-if-error input-ch)
 
@@ -80,16 +99,28 @@
 
 ;; Email verification
 
-(defn- check-token [token out-ch]
+(defn- check-token
+  "Check if token actually exist in the database. The result is a vector where the
+  first value is a boolean indicating whether the token indeed exists, and the
+  second value is the token previously used to check. The result is pipelined to
+  out-ch channel supplied in second parameter."
+  [token out-ch]
   (->> (async/thread (users/find-token db-spec {:token token}))
        (async/reduce #(boolean (or %1 %2)) false)
        (async/pipeline 1 out-ch (map #(vector % token)))))
 
-(defn- verify [[_ token] out-ch]
+(defn- verify
+  "Verify user email based on token. The result is an indicator whether database
+  is updated. The result is pipelined to out-ch channel supplied in second
+  parameter."
+  [[_ token] out-ch]
   (->> (async/thread (users/verify-user db-spec {:token token}))
        (async/pipeline 1 out-ch (map pos?))))
 
-(defn verify-handler [{:keys [params] :as req} respond _]
+(defn verify-handler
+  "Handler for email verification. The email verification token is validated
+  before verification takes place."
+  [{:keys [params] :as req} respond _]
   (if-let [token (:token params)]
     (let [input-ch (chan)
 
