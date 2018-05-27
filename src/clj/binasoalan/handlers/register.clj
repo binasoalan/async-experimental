@@ -95,23 +95,31 @@
 
 ;; Email verification
 
-(defn- check-token
+(defn- validate-token [token]
+  (if (seq token)
+    [nil token]
+    [{:error "invalid token"} token]))
+
+(defn- lookup-token
   "Check if token actually exist in the database. The result is a vector where the
-  first value is a boolean indicating whether the token indeed exists, and the
-  second value is the token previously used to check. The result is pipelined to
-  out-ch channel supplied in second parameter."
+  first value is the error message, and the second value is the token previously
+  used to check. The result is pipelined to out-ch channel supplied in second
+  parameter."
   [token out-ch]
-  (->> (async/thread (users/find-token db-spec {:token token}))
-       (async/reduce #(boolean (or %1 %2)) false)
-       (async/pipeline 1 out-ch (map #(vector % token)))))
+  (->> (users/find-token db-spec {:token token})
+       (merge {})
+       (async/thread)
+       (async/pipeline 1 out-ch (map validate-token))))
 
 (defn- verify
-  "Verify user email based on token. The result is an indicator whether database
-  is updated. The result is pipelined to out-ch channel supplied in second
-  parameter."
-  [[_ token] out-ch]
-  (->> (async/thread (users/verify-user db-spec {:token token}))
-       (async/pipeline 1 out-ch (map pos?))))
+  "Verify user email based on token. The result is a vector where the first value
+  is an indicator whether there is no problem with database update, and the
+  second value is the token used previously to verify. The result is pipelined
+  to out-ch channel supplied in second parameter."
+  [[_ {:as token}] out-ch]
+  (->> (users/verify-user db-spec token)
+       (async/thread)
+       (async/pipeline 1 out-ch (comp (map zero?) (map #(vector % token))))))
 
 (defn verify-handler
   "Handler for email verification. The email verification token is validated
@@ -120,11 +128,11 @@
   (if-let [token (:token params)]
     (let [input-ch               (chan)
           validation-ch          (chan)
-          [valid-ch invalid-ch]  (async/split first validation-ch)
+          [invalid-ch valid-ch]  (async/split first validation-ch)
           verification-ch        (chan)
-          [success-ch failed-ch] (async/split identity verification-ch)]
+          [failed-ch success-ch] (async/split first verification-ch)]
       (->> input-ch
-           (async/pipeline-async 1 validation-ch check-token))
+           (async/pipeline-async 1 validation-ch lookup-token))
       (->> valid-ch
            (async/pipeline-async 1 verification-ch verify))
 
