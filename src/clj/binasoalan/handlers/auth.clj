@@ -1,7 +1,7 @@
 (ns binasoalan.handlers.auth
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.db.users :as users]
-            [binasoalan.utils :refer [flash]]
+            [binasoalan.utils :refer [flash split-if-error]]
             [binasoalan.validation :as v]
             [buddy.hashers :as hashers]
             [clojure.core.async :as async :refer [chan go alt! put! close!]]
@@ -44,9 +44,9 @@
   "Handler for user login."
   [{:keys [params] :as req} respond _]
   (let [input-ch                (chan 1 (map v/validate-login))
-        [invalid-ch valid-ch]   (async/split first input-ch)
+        [invalid-ch valid-ch]   (split-if-error input-ch)
         lookup-ch               (chan)
-        [not-found-ch found-ch] (async/split first lookup-ch)
+        [not-found-ch found-ch] (split-if-error lookup-ch)
         auth-ch                 (chan)]
     (->> valid-ch
          (async/pipeline-async 1 lookup-ch lookup-user))

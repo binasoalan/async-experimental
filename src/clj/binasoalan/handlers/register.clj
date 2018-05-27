@@ -1,7 +1,7 @@
 (ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.mailer :as mailer]
-            [binasoalan.utils :refer [flash]]
+            [binasoalan.utils :refer [flash split-if-error]]
             [binasoalan.validation :as v]
             [binasoalan.db.users :as users]
             [buddy.hashers :as hashers]
@@ -44,13 +44,11 @@
   (let [prepared-user (-> user
                           (update :password hashers/derive)
                           (assoc :token (generate-token)))]
-    (->> (async/thread (users/register-user db-spec prepared-user))
-         (async/pipeline 1 out-ch (map #(vector (zero? %) prepared-user))))))
-
-(defn- split-if-error
-  "Split the channel if the value from the channel contains error."
-  [ch]
-  (async/split first ch))
+    (->> (users/register-user db-spec prepared-user)
+         (async/thread)
+         (async/pipeline 1 out-ch (comp
+                                   (map zero?)
+                                   (map #(vector % prepared-user)))))))
 
 (defn register-handler
   "Handler for user registration. The process goes through validation, checking
@@ -128,9 +126,9 @@
   (if-let [token (:token params)]
     (let [input-ch               (chan)
           validation-ch          (chan)
-          [invalid-ch valid-ch]  (async/split first validation-ch)
+          [invalid-ch valid-ch]  (split-if-error validation-ch)
           verification-ch        (chan)
-          [failed-ch success-ch] (async/split first verification-ch)]
+          [failed-ch success-ch] (split-if-error verification-ch)]
       (->> input-ch
            (async/pipeline-async 1 validation-ch lookup-token))
       (->> valid-ch
