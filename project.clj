@@ -20,6 +20,7 @@
                  [org.clojure/java.jdbc "0.7.6"]
                  [org.eclipse.jetty/jetty-server "9.4.9.v20180320"]
                  [org.postgresql/postgresql "42.2.2"]
+                 [org.slf4j/slf4j-simple "1.7.25"]
                  [re-frame "0.10.5"]
                  [reagent "0.8.1"]
                  [ring/ring-anti-forgery "1.2.0"]
@@ -67,7 +68,7 @@
   {:dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
                         [day8.re-frame/tracing "0.5.1"]
                         [javax.servlet/servlet-api "2.5"]
-                        [org.slf4j/slf4j-nop "1.7.13" :scope "test"]
+                        [org.slf4j/slf4j-nop "1.7.25" :scope "test"]
                         [ring/ring-mock "0.3.2"]]
 
          :plugins [[lein-figwheel "0.5.16"]]}
