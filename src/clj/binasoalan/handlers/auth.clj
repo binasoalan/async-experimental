@@ -8,21 +8,23 @@
             [ring.util.response :refer :all]))
 
 
+(defn- validate-password [password user]
+  (if (and (seq user)
+           (hashers/check password (:password user)))
+    [nil user]
+    [{:error "wrong username/password"} user]))
+
 (defn- lookup-user
   "Lookup user from database and then compare the password. The result is a vector
-  of which the first value is a boolean indicating whether they match, and the
-  second value is the user hashmap used previously to check. The result is
-  pipelined to out-ch channel supplied in the second parameter."
+  of which the first value is the error hashmap, and the second value is the
+  user hashmap used previously to check. The result is pipelined to out-ch
+  channel supplied in the second parameter."
   [[_ user] out-ch]
   (let [password (:password user)]
     (->> (users/find-user-by-username db-spec user)
          (merge {})
          (async/thread)
-         (async/pipeline 1
-                         out-ch
-                         (map #(if (seq %)
-                                 [(hashers/check password (:password %)) user]
-                                 [false user]))))))
+         (async/pipeline 1 out-ch (map (partial validate-password password))))))
 
 (defn- authenticate
   "Authenticate request by adding :identity key to session with username."
@@ -44,7 +46,7 @@
   (let [input-ch                (chan 1 (map v/validate-login))
         [invalid-ch valid-ch]   (async/split first input-ch)
         lookup-ch               (chan)
-        [not-found-ch found-ch] (async/split (comp not first) lookup-ch)
+        [not-found-ch found-ch] (async/split first lookup-ch)
         auth-ch                 (chan)]
     (->> valid-ch
          (async/pipeline-async 1 lookup-ch lookup-user))
