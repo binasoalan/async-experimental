@@ -4,7 +4,7 @@
             [binasoalan.utils :refer [flash]]
             [binasoalan.validation :as v]
             [buddy.hashers :as hashers]
-            [clojure.core.async :as async :refer [chan go alts! put! close!]]
+            [clojure.core.async :as async :refer [chan go alt! put! close!]]
             [ring.util.response :refer :all]))
 
 
@@ -51,22 +51,22 @@
     (->> found-ch
          (async/pipeline 1 auth-ch (map (partial authenticate req))))
 
+    (put! input-ch params)
+
     (go
-      (let [[res ch] (alts! [invalid-ch not-found-ch auth-ch])
-            response (condp = ch
-                       invalid-ch
-                       (-> (redirect "/login")
-                           (flash {:message "invalid input"}))
+      (respond
+       (alt!
+         invalid-ch
+         ([] (-> (redirect "/login")
+                 (flash {:message "invalid input"})))
 
-                       not-found-ch
-                       (-> (redirect "/login")
-                           (flash {:message "wrong username/password"}))
+         not-found-ch
+         ([] (-> (redirect "/login")
+                 (flash {:message "wrong username/password"})))
 
-                       auth-ch res)]
-        (respond response)
-        (close! input-ch)))
-
-    (put! input-ch params)))
+         auth-ch
+         ([result] result)))
+      (close! input-ch))))
 
 
 (defn logout-handler

@@ -7,7 +7,7 @@
             [buddy.hashers :as hashers]
             [buddy.core.codecs :as codecs]
             [buddy.core.nonce :as nonce]
-            [clojure.core.async :as async :refer [go chan alts! put! close!]]
+            [clojure.core.async :as async :refer [go chan alt! put! close!]]
             [ring.util.response :refer :all]))
 
 (def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
@@ -68,30 +68,29 @@
     (->> available-ch
          (async/pipeline-async 1 persisting-ch persist-user))
 
+    (put! input-ch params)
+
     (go
-      (let [[val ch] (alts! [invalid-ch not-available-ch failed-ch success-ch])
-            response (condp = ch
-                       invalid-ch
-                       (-> (redirect "/daftar")
-                           (flash {:errors (first val) :data (second val)}))
+      (respond
+       (alt!
+         invalid-ch
+         ([result] (-> (redirect "/daftar")
+                       (flash {:errors (first result) :data (second result)})))
 
-                       not-available-ch
-                       (-> (redirect "/daftar")
-                           (flash {:message (:user-existed msg)}))
+         not-available-ch
+         ([]       (-> (redirect "/daftar")
+                       (flash {:message (:user-existed msg)})))
 
-                       failed-ch
-                       (-> (redirect "/daftar")
-                           (flash {:message (:failed msg)}))
+         failed-ch
+         ([]       (-> (redirect "/daftar")
+                       (flash {:message (:failed msg)})))
 
-                       success-ch
-                       (do
-                         (future (mailer/send-email-verification (second val)))
-                         (-> (redirect "/login")
-                             (flash {:message (:success msg)}))))]
-        (respond response)
-        (close! input-ch)))
-
-    (put! input-ch params)))
+         success-ch
+         ([result] (do
+                     (future (mailer/send-email-verification (second result)))
+                     (-> (redirect "/login")
+                         (flash {:message (:success msg)}))))))
+      (close! input-ch))))
 
 
 ;; Email verification
@@ -129,14 +128,13 @@
       (->> valid-ch
            (async/pipeline-async 1 verification-ch verify))
 
-      (go
-        (let [[val ch] (alts! [invalid-ch failed-ch success-ch])
-              response (condp = ch
-                         invalid-ch (redirect "/login")
-                         failed-ch (redirect "/login")
-                         success-ch (redirect "/verified"))]
-          (respond response)
-          (close! input-ch)))
+      (put! input-ch token)
 
-      (put! input-ch token))
+      (go
+        (respond
+         (alt!
+           invalid-ch ([] (redirect "/login"))
+           failed-ch  ([] (redirect "/login"))
+           success-ch ([] (redirect "/verified"))))
+        (close! input-ch)))
     (respond (redirect "/login"))))
