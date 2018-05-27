@@ -57,15 +57,12 @@
   for availability, and persisting data phases. When successful, email
   verification will be sent."
   [{:keys [params] :as req} respond _]
-  (let [input-ch (chan 1 (map v/validate-registration))
-        [invalid-ch valid-ch] (split-if-error input-ch)
-
-        availability-ch (chan)
+  (let [input-ch                        (chan 1 (map v/validate-registration))
+        [invalid-ch valid-ch]           (split-if-error input-ch)
+        availability-ch                 (chan)
         [not-available-ch available-ch] (split-if-error availability-ch)
-
-        persisting-ch (chan)
-        [failed-ch success-ch] (split-if-error persisting-ch)]
-
+        persisting-ch                   (chan)
+        [failed-ch success-ch]          (split-if-error persisting-ch)]
     (->> valid-ch
          (async/pipeline-async 1 availability-ch check-existing-user))
     (->> available-ch
@@ -122,12 +119,10 @@
   before verification takes place."
   [{:keys [params] :as req} respond _]
   (if-let [token (:token params)]
-    (let [input-ch (chan)
-
-          validation-ch (chan)
-          [valid-ch invalid-ch] (async/split first validation-ch)
-
-          verification-ch (chan)
+    (let [input-ch               (chan)
+          validation-ch          (chan)
+          [valid-ch invalid-ch]  (async/split first validation-ch)
+          verification-ch        (chan)
           [success-ch failed-ch] (async/split identity verification-ch)]
       (->> input-ch
            (async/pipeline-async 1 validation-ch check-token))
