@@ -59,11 +59,11 @@
    [:div.form-group
     (label "username" "Username")
     [:input#username.form-control
-     {:type "text" :name "username" :placeholder "Username" :required true}]]
+     {:type "text" :name "username" :placeholder "Username"}]]
    [:div.form-group
     (label "password" "Password")
     [:input#password.form-control
-     {:type "password" :name "password" :placeholder "Password" :required true}]]
+     {:type "password" :name "password" :placeholder "Password"}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
 (defn register-form [& [{:keys [errors data]}]]

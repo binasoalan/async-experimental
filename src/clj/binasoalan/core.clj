@@ -1,5 +1,6 @@
 (ns binasoalan.core
-  (:require [binasoalan.handlers.register :refer [register-handler verify-handler]]
+  (:require [binasoalan.handlers.auth :as auth]
+            [binasoalan.handlers.register :as register]
             [binasoalan.views :as views]
             [compojure.core :refer :all]
             [compojure.route :as route]
@@ -11,10 +12,11 @@
   (GET "/login" [] views/login)
   (GET "/daftar" [] views/daftar)
   (GET "/tentang" [] views/tentang)
-  (GET "/sahkan" [] verify-handler)
+  (GET "/sahkan" [] register/verify-handler)
   (GET "/verified" [] views/verified)
-  (POST "/login" [] "Logged in")
-  (POST "/daftar" [] register-handler)
+  (POST "/login" [] auth/login-handler)
+  (POST "/logout" [] auth/logout-handler)
+  (POST "/daftar" [] register/register-handler)
   (route/not-found "Not Found"))
 
 (def app
