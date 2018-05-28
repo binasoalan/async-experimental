@@ -78,14 +78,18 @@
                 :pretty-print false}}]}
 
   :profiles
-  {:dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
-                        [day8.re-frame/tracing "0.5.1"]
-                        [javax.servlet/servlet-api "2.5"]
-                        [org.slf4j/slf4j-nop "1.7.25" :scope "test"]
-                        [ring/ring-mock "0.3.2"]]
+  {:dev [:project/dev :profiles/dev]
 
-         :plugins [[lein-figwheel "0.5.16"]]}
+   :prod {:dependencies [[day8.re-frame/tracing-stubs "0.5.1"]]}
 
-   :prod {:dependencies [[day8.re-frame/tracing-stubs "0.5.1"]]}}
+   ;; This profile is to be merged for :dev, so that it will not be overwritten
+   ;; by profiles.clj
+   :project/dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
+                                [day8.re-frame/tracing "0.5.1"]
+                                [javax.servlet/servlet-api "2.5"]
+                                [ring/ring-mock "0.3.2"]]
+
+                 :plugins [[lein-figwheel "0.5.16"
+                            :exclusions [org.clojure/clojure]]]}}
 
   :aliases {"build" ["do" "clean" ["cljsbuild" "once" "min"] ["ring" "uberjar"]]})
