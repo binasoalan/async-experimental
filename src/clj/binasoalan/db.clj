@@ -5,11 +5,12 @@
             [environ.core :refer [env]]
             [hikari-cp.core :as hikari]))
 
+(def database-name (:database-name env))
 (def username (config/decrypt (:database-username env)))
 (def password (config/decrypt (:database-password env)))
 
 (def datasource-options {:adapter "postgresql"
-                         :database-name "binasoalan_dev"
+                         :database-name database-name
                          :username username
                          :password password})
 
