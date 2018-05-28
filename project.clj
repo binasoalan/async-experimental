@@ -4,18 +4,26 @@
 
   :min-lein-version "2.7.0"
 
-  :dependencies [[buddy "2.0.0"]
-                 [cljs-ajax "0.7.3"]
+  :dependencies [[buddy "2.0.0"
+                  :exclusions [cheshire
+                               commons-codec]]
+                 [cheshire "5.8.0"]
+                 [cljs-ajax "0.7.3"
+                  :exclusions [commons-codec]]
                  [com.draines/postal "2.0.2"]
                  [com.layerware/hugsql "0.4.8"]
-                 [compojure "1.6.1"]
-                 [day8.re-frame/http-fx "0.1.6"]
+                 [commons-codec "1.10"]
+                 [compojure "1.6.1"
+                  :exclusions [commons-codec]]
+                 [day8.re-frame/http-fx "0.1.6"
+                  :exclusions [commons-codec]]
                  [environ "1.1.0"]
                  [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
                  [hikari-cp "2.4.0"]
                  [org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.238"]
+                 [org.clojure/clojurescript "1.10.238"
+                  :exclusions [commons-codec]]
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/java.jdbc "0.7.6"]
                  [org.eclipse.jetty/jetty-server "9.4.9.v20180320"]
@@ -23,6 +31,7 @@
                  [org.slf4j/slf4j-simple "1.7.25"]
                  [re-frame "0.10.5"]
                  [reagent "0.8.1"]
+                 [ring "1.6.3"]
                  [ring/ring-anti-forgery "1.2.0"]
                  [ring/ring-defaults "0.3.1"]
                  [ring/ring-json "0.5.0-beta1"]
@@ -30,13 +39,17 @@
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-environ "1.1.0"]
-            [lein-ring "0.12.4"]]
+            [lein-ring "0.12.4"
+             :exclusions [org.clojure/clojure]]]
 
   :source-paths ["src/clj" "src/cljc"]
-
-  :resource-paths ["resources"]
+  :resource-paths ["resources" "target/resources"]
+  :test-paths ["test/clj"]
+  :target-path "target/%s"
+  :main ^:skip-aot binasoalan.core
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
+  :auto-clean false
 
   :ring {:handler binasoalan.core/app
          :async? true
@@ -65,15 +78,18 @@
                 :pretty-print false}}]}
 
   :profiles
-  {:dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
-                        [day8.re-frame/tracing "0.5.1"]
-                        [javax.servlet/servlet-api "2.5"]
-                        [org.slf4j/slf4j-nop "1.7.25" :scope "test"]
-                        [ring/ring-mock "0.3.2"]]
+  {:dev [:project/dev :profiles/dev]
 
-         :plugins [[lein-figwheel "0.5.16"]]}
-   :prod {:dependencies [[day8.re-frame/tracing-stubs "0.5.1"]]}}
+   :prod {:dependencies [[day8.re-frame/tracing-stubs "0.5.1"]]}
 
-  :auto-clean false
+   ;; This profile is to be merged for :dev, so that it will not be overwritten
+   ;; by profiles.clj
+   :project/dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
+                                [day8.re-frame/tracing "0.5.1"]
+                                [javax.servlet/servlet-api "2.5"]
+                                [ring/ring-mock "0.3.2"]]
+
+                 :plugins [[lein-figwheel "0.5.16"
+                            :exclusions [org.clojure/clojure]]]}}
 
   :aliases {"build" ["do" "clean" ["cljsbuild" "once" "min"] ["ring" "uberjar"]]})
