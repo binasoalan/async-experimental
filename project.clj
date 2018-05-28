@@ -21,6 +21,7 @@
                  [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
                  [hikari-cp "2.4.0"]
+                 [migratus "1.0.6"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"
                   :exclusions [commons-codec]]
@@ -46,7 +47,7 @@
   :resource-paths ["resources" "target/resources"]
   :test-paths ["test/clj"]
   :target-path "target/%s"
-  :main ^:skip-aot binasoalan.core
+  :main ^:skip-aot binasoalan.migrations
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
   :auto-clean false

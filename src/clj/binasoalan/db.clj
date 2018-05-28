@@ -1,7 +1,5 @@
 (ns binasoalan.db
   (:require [binasoalan.config :as config]
-            [buddy.core.codecs :as codecs]
-            [buddy.core.crypto :as crypto]
             [environ.core :refer [env]]
             [hikari-cp.core :as hikari]))
 
