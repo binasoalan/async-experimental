@@ -1,7 +1,7 @@
-(ns binasoalan.handler-test
+(ns binasoalan.core-test
   (:require [clojure.test :refer :all]
             [ring.mock.request :as mock]
-            [binasoalan.handler :refer :all]))
+            [binasoalan.core :refer :all]))
 
 (deftest test-app
   (testing "main route"
