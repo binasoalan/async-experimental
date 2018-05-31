@@ -17,6 +17,7 @@
                   :exclusions [commons-codec]]
                  [day8.re-frame/http-fx "0.1.6"
                   :exclusions [commons-codec]]
+                 [enlive "1.1.6"]
                  [environ "1.1.0"]
                  [funcool/struct "1.2.0"]
                  [hiccup "1.0.5"]
@@ -81,16 +82,16 @@
   :profiles
   {:dev [:project/dev :profiles/dev]
 
+   :test [:project/test :profiles/test]
+
    :prod {:dependencies [[day8.re-frame/tracing-stubs "0.5.1"]]}
 
-   ;; This profile is to be merged for :dev, so that it will not be overwritten
-   ;; by profiles.clj
    :project/dev {:dependencies [[day8.re-frame/re-frame-10x "0.3.3-react16"]
-                                [day8.re-frame/tracing "0.5.1"]
-                                [javax.servlet/servlet-api "2.5"]
-                                [ring/ring-mock "0.3.2"]]
+                                [day8.re-frame/tracing "0.5.1"]]
 
                  :plugins [[lein-figwheel "0.5.16"
-                            :exclusions [org.clojure/clojure]]]}}
+                            :exclusions [org.clojure/clojure]]]}
+
+   :project/test {:dependencies [[etaoin "0.2.8-SNAPSHOT"]]}}
 
   :aliases {"build" ["do" "clean" ["cljsbuild" "once" "min"] ["ring" "uberjar"]]})
