@@ -1,9 +1,10 @@
 (ns binasoalan.views
   (:require [hiccup.element :refer [link-to]]
             [hiccup.form :refer [label text-field password-field email-field
-                                 submit-button]]
+                                 submit-button hidden-field]]
             [hiccup.page :refer [html5 include-css include-js]]
-            [ring.util.anti-forgery :refer [anti-forgery-field]]))
+            [io.pedestal.http.csrf :as csrf]
+            [ring.util.http-response :as resp]))
 
 (defn header []
   [:header
@@ -53,9 +54,9 @@
        "https://code.jquery.com/jquery-3.3.1.slim.min.js"
        "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js")])))
 
-(defn login-form []
+(defn login-form [req]
   [:form {:method "post" :action "/login"}
-   (anti-forgery-field)
+   (hidden-field "__anti-forgery-token" (csrf/anti-forgery-token req))
    [:div.form-group
     (label "username" "Username")
     [:input#username.form-control
@@ -66,39 +67,41 @@
      {:type "password" :name "password" :placeholder "Password"}]]
    [:input.btn.btn-primary.btn-block {:type "submit" :value "Login"}]])
 
-(defn register-form [& [{:keys [errors data]}]]
-  [:form {:method "post" :action "/daftar"}
-   (anti-forgery-field)
+(defn register-form [req]
+  (let [{:keys [errors data]} (:flash req)]
+    [:form {:method "post" :action "/daftar"}
+     (hidden-field "__anti-forgery-token" (csrf/anti-forgery-token req))
 
-   [:div.form-group {:class (if (:username errors) "has-error" "")}
-    [:label.control-label {:for "username"} "Username"]
-    [:input#username.form-control
-     {:type "text" :name "username" :placeholder "Username"
-      :value (:username data)}]
-    (when (:username errors)
-      [:span.help-block "Username tidak boleh kosong."])]
+     [:div.form-group {:class (if (:username errors) "has-error" "")}
+      [:label.control-label {:for "username"} "Username"]
+      [:input#username.form-control
+       {:type "text" :name "username" :placeholder "Username"
+        :value (:username data)}]
+      (when (:username errors)
+        [:span.help-block "Username tidak boleh kosong."])]
 
-   [:div.form-group {:class (if (:email errors) "has-error" "")}
-    [:label.control-label {:for "email"} "Email"]
-    [:input#email.form-control
-     {:type "text" :name "email" :placeholder "Email" :value (:email data)}]
-    (when (:email errors)
-      [:span.help-block "Email mesti dalam bentuk email yang sah dan tidak boleh kosong."])]
+     [:div.form-group {:class (if (:email errors) "has-error" "")}
+      [:label.control-label {:for "email"} "Email"]
+      [:input#email.form-control
+       {:type "text" :name "email" :placeholder "Email" :value (:email data)}]
+      (when (:email errors)
+        [:span.help-block "Email mesti dalam bentuk email yang sah dan tidak boleh kosong."])]
 
-   [:div.form-group {:class (if (:password errors) "has-error" "")}
-    [:label.control-label {:for "password"} "Password"]
-    [:input#password.form-control
-     {:type "password" :name "password" :placeholder "Password"}]
-    (when (:password errors)
-      [:span.help-block "Password tidak boleh kosong."])]
+     [:div.form-group {:class (if (:password errors) "has-error" "")}
+      [:label.control-label {:for "password"} "Password"]
+      [:input#password.form-control
+       {:type "password" :name "password" :placeholder "Password"}]
+      (when (:password errors)
+        [:span.help-block "Password tidak boleh kosong."])]
 
-   [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]])
+     [:input.btn.btn-primary.btn-block {:type "submit" :value "Daftar"}]]))
 
 
 ;; Pages
 
 (defn index
-  ([req]
+  [req]
+  (resp/ok
    (base-html
     req
     [:section.container
@@ -109,11 +112,11 @@
      [:div.col-md-4
       [:div.panel.panel-default
        [:div.panel-body
-        (register-form)]]]]))
-  ([req respond _] (respond (index req))))
+        (register-form req)]]]])))
 
 (defn login
-  ([{{message :message} :flash :as req}]
+  [{{message :message} :flash :as req}]
+  (resp/ok
    (base-html
     req
     {:title "Log Masuk"}
@@ -123,11 +126,11 @@
         [:div.alert.alert-success message])
       [:div.panel.panel-default
        [:div.panel-body
-        (login-form)]]]]))
-  ([req respond _] (respond (login req))))
+        (login-form req)]]]])))
 
 (defn daftar
-  ([{{message :message} :flash :as req}]
+  [{{message :message} :flash :as req}]
+  (resp/ok
    (base-html
     req
     {:title "Daftar"}
@@ -136,11 +139,11 @@
       (when message
         [:div.alert.alert-danger
          message])
-      (register-form (:flash req))]]))
-  ([req respond _] (respond (daftar req))))
+      (register-form req)]])))
 
 (defn verified
-  ([req]
+  [req]
+  (resp/ok
    (base-html
     req
     {:title "Email telah disahkan"}
@@ -150,14 +153,13 @@
        [:div.panel-body.text-center
         [:p
          "Email anda telah disahkan. Anda boleh log in."]
-        [:p [:a {:href "/login"} "Klik di sini untuk log in"]]]]]]))
-  ([req respond _] (respond (verified req))))
+        [:p [:a {:href "/login"} "Klik di sini untuk log in"]]]]]])))
 
 (defn tentang
-  ([req]
+  [req]
+  (resp/ok
    (base-html
     req
     {:title "Tentang Kami"}
     [:section
-     [:p "Now that we know who you are, I know who I am."]]))
-  ([req respond _] (respond (tentang req))))
+     [:p "Now that we know who you are, I know who I am."]])))
