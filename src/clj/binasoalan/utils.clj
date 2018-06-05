@@ -1,7 +1,8 @@
 (ns binasoalan.utils
   (:require [clojure.core.async :as async]
             [io.pedestal.http :as http]
-            [io.pedestal.http.body-params :as body-params]))
+            [io.pedestal.http.body-params :as body-params]
+            [io.pedestal.http.ring-middlewares :as ring]))
 
 (defn flash
   "Returns updated Ring response with associated flash data."
@@ -13,4 +14,4 @@
   [ch]
   (async/split first ch))
 
-(def common-interceptors [(body-params/body-params) http/html-body])
+(def common-interceptors [(body-params/body-params) http/html-body (ring/flash)])
