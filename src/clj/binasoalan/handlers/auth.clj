@@ -50,9 +50,9 @@
 
 (defn authenticate
   [request]
-  (let [remember?              (get-in request [:form-params :remember])
+  (let [identity               (get-in request [:form-params :username])
+        remember?              (get-in request [:form-params :remember])
         session                (:session request)
-        identity               (get-in request [:form-params :username])
         updated-session        (assoc session :identity identity)
         authenticated-response (-> (resp/ok "Logged in")
                                    (assoc :session updated-session))]
