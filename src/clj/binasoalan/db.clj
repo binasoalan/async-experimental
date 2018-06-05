@@ -3,15 +3,16 @@
             [environ.core :refer [env]]
             [hikari-cp.core :as hikari]))
 
-(def database-name (:database-name env))
-(def username (config/decrypt (:database-username env)))
-(def password (config/decrypt (:database-password env)))
+(defn init-db! []
+  (def database-name (:database-name env))
+  (def username (config/decrypt (:database-username env)))
+  (def password (config/decrypt (:database-password env)))
 
-(def datasource-options {:adapter "postgresql"
-                         :database-name database-name
-                         :username username
-                         :password password})
+  (def datasource-options {:adapter "postgresql"
+                           :database-name database-name
+                           :username username
+                           :password password})
 
-(def datasource (hikari/make-datasource datasource-options))
+  (def datasource (hikari/make-datasource datasource-options))
 
-(def db-spec {:datasource datasource})
+  (def db-spec {:datasource datasource}))

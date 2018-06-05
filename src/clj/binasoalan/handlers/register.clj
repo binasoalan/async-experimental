@@ -1,14 +1,15 @@
 (ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.mailer :as mailer]
-            [binasoalan.utils :refer [flash split-if-error]]
+            [binasoalan.utils :refer [flash common-interceptors]]
             [binasoalan.validation :as v]
+            [binasoalan.views :as views]
             [binasoalan.db.users :as users]
             [buddy.hashers :as hashers]
             [buddy.core.codecs :as codecs]
             [buddy.core.nonce :as nonce]
-            [clojure.core.async :as async :refer [go chan alt! put! close!]]
-            [ring.util.response :refer :all]))
+            [clojure.core.async :as async :refer [go <!]]
+            [ring.util.http-response :as resp]))
 
 (def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
           :success "Anda sudah berjaya mendaftar. Sila check email untuk mengesahkan email anda."
@@ -17,130 +18,129 @@
 
 ;; User registration
 
-(defn- check-existing-user
-  "Check whether username or email already existed. The result is a vector where
-  the first value is a boolean indicating username/email already existed, and
-  the second value is the form previously used to check. The result is pipelined
-  to out-ch channel supplied in second parameter."
-  [[_ form] out-ch]
-  (->> [(async/thread (users/find-user-by-username db-spec form))
-        (async/thread (users/find-user-by-email db-spec form))]
-       (async/merge)
-       (async/reduce #(boolean (or %1 %2)) false)
-       (async/pipeline 1 out-ch (map #(vector % form)))))
+
+(defn- invalid-response
+  [[errors data]]
+  (-> (resp/found "/daftar")
+      (flash {:errors errors :data data})))
+
+(def not-available-response
+  (-> (resp/found "/daftar")
+      (flash {:message (:user-existed msg)})))
+
+(def failed-response
+  (-> (resp/found "/daftar")
+      (flash {:message (:failed msg)})))
+
+(def success-response
+  (-> (resp/found "/login")
+      (flash {:message (:success msg)})))
+
 
 (defn- generate-token
   "Generate nonce as hexstring."
   []
   (codecs/bytes->hex (nonce/random-bytes 16)))
 
-(defn- persist-user
-  "Persist user into the database with hashed password and generated email
-  verification token. The result is a vector where the first value is a boolean
-  indicating whether database entries are added, and the second value is the
-  user hashmap that was used to store in the database. The result is pipelined
-  to out-ch channel supplied in second parameter."
-  [[_ user] out-ch]
-  (let [prepared-user (-> user
-                          (update :password hashers/derive)
-                          (assoc :token (generate-token)))]
-    (->> (users/register-user db-spec prepared-user)
-         (async/thread)
-         (async/pipeline 1 out-ch (comp
-                                   (map zero?)
-                                   (map #(vector % prepared-user)))))))
 
-(defn register-handler
-  "Handler for user registration. The process goes through validation, checking
-  for availability, and persisting data phases. When successful, email
-  verification will be sent."
-  [{:keys [params] :as req} respond _]
-  (let [input-ch                        (chan 1 (map v/validate-registration))
-        [invalid-ch valid-ch]           (split-if-error input-ch)
-        availability-ch                 (chan)
-        [not-available-ch available-ch] (split-if-error availability-ch)
-        persisting-ch                   (chan)
-        [failed-ch success-ch]          (split-if-error persisting-ch)]
-    (->> valid-ch
-         (async/pipeline-async 1 availability-ch check-existing-user))
-    (->> available-ch
-         (async/pipeline-async 1 persisting-ch persist-user))
+(def validate-input
+  {:name ::validate-input
+   :enter (fn [context]
+            (let [[errors data :as validated] (-> context
+                                                  :request
+                                                  :form-params
+                                                  v/validate-registration)]
+              (if errors
+                (assoc context :response (invalid-response validated))
+                context)))})
 
-    (put! input-ch params)
+(def check-existing-user
+  {:name ::check-existing-user
+   :enter (fn [context]
+            (let [form           (get-in context [:request :form-params])
+                  found-username (->> form
+                                      (users/find-user-by-username db-spec)
+                                      (async/thread))
+                  found-email    (->> form
+                                      (users/find-user-by-email db-spec)
+                                      (async/thread))]
+              (go
+                (if (or (<! found-username)
+                        (<! found-email))
+                  (assoc context :response not-available-response)
+                  context))))})
 
-    (go
-      (respond
-       (alt!
-         invalid-ch
-         ([result] (-> (redirect "/daftar")
-                       (flash {:errors (first result) :data (second result)})))
+(def persist-user
+  {:name ::persist-user
+   :enter (fn [context]
+            (let [user      (-> context
+                                :request
+                                :form-params
+                                (update :password hashers/derive)
+                                (assoc :token (generate-token)))
+                  row-count (->> user
+                                 (users/register-user db-spec)
+                                 (async/thread))]
+              (go
+                (if-let [success? (pos? (<! row-count))]
+                  (assoc context ::persisted-user user)
+                  (assoc context :response failed-response)))))})
 
-         not-available-ch
-         ([]       (-> (redirect "/daftar")
-                       (flash {:message (:user-existed msg)})))
+(def send-email-verification
+  {:name ::send-email-verification
+   :enter (fn [context]
+            (let [user (::persisted-user context)]
+              (future (mailer/send-email-verification user))
+              (assoc context :response success-response)))})
 
-         failed-ch
-         ([]       (-> (redirect "/daftar")
-                       (flash {:message (:failed msg)})))
-
-         success-ch
-         ([result] (do
-                     (future (mailer/send-email-verification (second result)))
-                     (-> (redirect "/login")
-                         (flash {:message (:success msg)}))))))
-      (close! input-ch))))
+(def register-interceptors (conj common-interceptors
+                                 `validate-input
+                                 `check-existing-user
+                                 `persist-user
+                                 `send-email-verification))
 
 
 ;; Email verification
 
-(defn- validate-token [token]
-  (if (seq token)
-    [nil token]
-    [{:error "invalid token"} token]))
+(def validate-token
+  {:name ::validate-token
+   :enter (fn [context]
+            (if-let [token (get-in context [:request :query-params :token])]
+              context
+              (assoc context :response (resp/found "/login"))))})
 
-(defn- lookup-token
-  "Check if token actually exist in the database. The result is a vector where the
-  first value is the error message, and the second value is the token previously
-  used to check. The result is pipelined to out-ch channel supplied in second
-  parameter."
-  [token out-ch]
-  (->> (users/find-token db-spec {:token token})
-       (merge {})
-       (async/thread)
-       (async/pipeline 1 out-ch (map validate-token))))
+(def lookup-token
+  {:name ::lookup-token
+   :enter (fn [context]
+            (let [token-exist? (->> context
+                                    :request
+                                    :query-params
+                                    (users/find-token db-spec)
+                                    (async/thread))]
+              (go
+                (if (<! token-exist?)
+                  context
+                  (assoc context :response (resp/found "/login"))))))})
 
-(defn- verify
-  "Verify user email based on token. The result is a vector where the first value
-  is an indicator whether there is no problem with database update, and the
-  second value is the token used previously to verify. The result is pipelined
-  to out-ch channel supplied in second parameter."
-  [[_ {:as token}] out-ch]
-  (->> (users/verify-user db-spec token)
-       (async/thread)
-       (async/pipeline 1 out-ch (comp (map zero?) (map #(vector % token))))))
+(def verify
+  {:name ::verify
+   :enter (fn [context]
+            (let [row-count (->> context
+                                 :request
+                                 :query-params
+                                 (users/verify-user db-spec)
+                                 (async/thread))]
+              (go
+                (if-let [success? (pos? (<! row-count))]
+                  (assoc context :response (resp/found "/verified"))
+                  (assoc context :response (resp/found "/login"))))))})
 
-(defn verify-handler
-  "Handler for email verification. The email verification token is validated
-  before verification takes place."
-  [{:keys [params] :as req} respond _]
-  (if-let [token (:token params)]
-    (let [input-ch               (chan)
-          validation-ch          (chan)
-          [invalid-ch valid-ch]  (split-if-error validation-ch)
-          verification-ch        (chan)
-          [failed-ch success-ch] (split-if-error verification-ch)]
-      (->> input-ch
-           (async/pipeline-async 1 validation-ch lookup-token))
-      (->> valid-ch
-           (async/pipeline-async 1 verification-ch verify))
+(def verify-email-interceptors (conj common-interceptors
+                                     `validate-token
+                                     `lookup-token
+                                     `verify))
 
-      (put! input-ch token)
 
-      (go
-        (respond
-         (alt!
-           invalid-ch ([] (redirect "/login"))
-           failed-ch  ([] (redirect "/login"))
-           success-ch ([] (redirect "/verified"))))
-        (close! input-ch)))
-    (respond (redirect "/login"))))
+(def routes #{["/daftar" :get (conj common-interceptors `views/daftar)]
+              ["/daftar" :post register-interceptors]
+              ["/sahkan" :get verify-email-interceptors]})

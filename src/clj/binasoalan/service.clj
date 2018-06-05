@@ -1,5 +1,6 @@
 (ns binasoalan.service
   (:require [binasoalan.handlers.auth :as auth]
+            [binasoalan.handlers.register :as register]
             [binasoalan.utils :refer [common-interceptors]]
             [binasoalan.views :as views]
             [clojure.set :as set]
@@ -10,7 +11,8 @@
                    ["/tentang" :get (conj common-interceptors `views/tentang)]})
 
 (def routes (set/union base-routes
-                       auth/routes))
+                       auth/routes
+                       register/routes))
 
 
 (def service {:env :prod
@@ -18,6 +20,7 @@
               ::http/enable-csrf {}
               ::http/enable-session {}
               ::http/resource-path "/public"
+              ::http/request-logger nil
               ::http/type :jetty
               ::http/port 3000
               ::http/container-options {:h2c? true
