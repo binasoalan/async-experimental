@@ -6,7 +6,7 @@
             [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
-            [ring.util.response :refer :all]))
+            [ring.util.http-response :refer :all]))
 
 (defroutes app-routes
   (GET "/" [] views/index)

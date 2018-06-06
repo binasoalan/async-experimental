@@ -1,14 +1,15 @@
 (ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.mailer :as mailer]
-            [binasoalan.utils :refer [flash fork fork-async]]
+            [binasoalan.utils :refer [fork fork-async]]
             [binasoalan.validation :as v]
+            [binasoalan.views :as views]
             [binasoalan.db.users :as users]
             [buddy.hashers :as hashers]
             [buddy.core.codecs :as codecs]
             [buddy.core.nonce :as nonce]
             [clojure.core.async :as async :refer [go chan alt! put! close!]]
-            [ring.util.response :refer :all]))
+            [ring.util.http-response :refer :all]))
 
 (def msg {:user-existed "Username/email sudah diambil. Sila daftar menggunakan username/email yang lain."
           :success "Anda sudah berjaya mendaftar. Sila check email untuk mengesahkan email anda."
@@ -16,24 +17,6 @@
 
 
 ;; User registration
-
-
-(defn- invalid-response [[errors data :as result]]
-  (-> (redirect "/daftar")
-      (flash {:errors errors :data data})))
-
-(def not-available-response
-  (-> (redirect "/daftar")
-      (flash {:message (:user-existed msg)})))
-
-(def failed-response
-  (-> (redirect "/daftar")
-      (flash {:message (:failed msg)})))
-
-(def success-response
-  (-> (redirect "/login")
-      (flash {:message (:success msg)})))
-
 
 (defn- check-existing-user
   "Check whether username or email already existed. The result is a vector where
@@ -71,11 +54,23 @@
 (def x-validate
   (map v/validate-registration))
 
+(defn- invalid-response [request [errors data :as result]]
+  (views/daftar request {:errors errors :data data}))
+
+(defn- not-available-response [request]
+  (views/daftar request {:message (:user-existed msg)}))
+
+(defn- failed-response [request]
+  (views/daftar request {:message (:failed msg)}))
+
+(defn- success-response [request]
+  (views/login request {:message (:success msg)}))
+
 (defn register-handler
   "Handler for user registration. The process goes through validation, checking
   for availability, and persisting data phases. When successful, email
   verification will be sent."
-  [{:keys [params] :as req} respond _]
+  [{:keys [params] :as request} respond _]
   (let [input-ch                        (chan)
         [invalid-ch valid-ch]           (fork x-validate input-ch)
         [not-available-ch available-ch] (fork-async check-existing-user valid-ch)
@@ -86,12 +81,12 @@
     (go
       (respond
        (alt!
-         invalid-ch       ([result] (invalid-response result))
-         not-available-ch ([]       not-available-response)
-         failed-ch        ([]       failed-response)
+         invalid-ch       ([result] (invalid-response request result))
+         not-available-ch ([]       (not-available-response request))
+         failed-ch        ([]       (failed-response request))
          success-ch       ([[_ user]]
                            (future (mailer/send-email-verification user))
-                           success-response)))
+                           (success-response request))))
       (close! input-ch))))
 
 
@@ -125,7 +120,7 @@
 (defn verify-handler
   "Handler for email verification. The email verification token is validated
   before verification takes place."
-  [{:keys [params] :as req} respond _]
+  [{:keys [params] :as request} respond _]
   (if-let [token (:token params)]
     (let [input-ch               (chan)
           [invalid-ch valid-ch]  (fork-async lookup-token input-ch)
@@ -136,8 +131,8 @@
       (go
         (respond
          (alt!
-           invalid-ch ([] (redirect "/login"))
-           failed-ch  ([] (redirect "/login"))
-           success-ch ([] (redirect "/verified"))))
+           invalid-ch ([] (see-other "/login"))
+           failed-ch  ([] (see-other "/login"))
+           success-ch ([] (found "/verified"))))
         (close! input-ch)))
-    (respond (redirect "/login"))))
+    (respond (see-other "/login"))))

@@ -10,8 +10,8 @@
   {:username [s/required s/string]
    :password [s/required s/string]})
 
-(defn validate-registration [req]
-  (s/validate req registration-schema))
+(defn validate-registration [request]
+  (s/validate request registration-schema))
 
-(defn validate-login [req]
-  (s/validate req login-schema))
+(defn validate-login [request]
+  (s/validate request login-schema))

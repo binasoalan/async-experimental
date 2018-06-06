@@ -113,9 +113,10 @@
   ([req respond _] (respond (index req))))
 
 (defn login
-  ([{{message :message} :flash :as req}]
+  ([request] (login request {}))
+  ([request {:keys [message] :as errors}]
    (base-html
-    req
+    request
     {:title "Log Masuk"}
     [:section.container
      [:div.col-md-4.col-md-offset-4
@@ -124,20 +125,21 @@
       [:div.panel.panel-default
        [:div.panel-body
         (login-form)]]]]))
-  ([req respond _] (respond (login req))))
+  ([request respond _] (respond (login request))))
 
 (defn daftar
-  ([{{message :message} :flash :as req}]
+  ([request] (daftar request {}))
+  ([request {:keys [message] :as errors}]
    (base-html
-    req
+    request
     {:title "Daftar"}
     [:section.container
      [:div.col-md-6.col-md-offset-3
       (when message
         [:div.alert.alert-danger
          message])
-      (register-form (:flash req))]]))
-  ([req respond _] (respond (daftar req))))
+      (register-form errors)]]))
+  ([request respond _] (respond (daftar request))))
 
 (defn verified
   ([req]

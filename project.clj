@@ -4,19 +4,14 @@
 
   :min-lein-version "2.7.0"
 
-  :dependencies [[buddy "2.0.0"
-                  :exclusions [cheshire
-                               commons-codec]]
+  :dependencies [[buddy "2.0.0"]
                  [cheshire "5.8.0"]
-                 [cljs-ajax "0.7.3"
-                  :exclusions [commons-codec]]
+                 [cljs-ajax "0.7.3"]
                  [com.draines/postal "2.0.2"]
                  [com.layerware/hugsql "0.4.8"]
                  [commons-codec "1.10"]
-                 [compojure "1.6.1"
-                  :exclusions [commons-codec]]
-                 [day8.re-frame/http-fx "0.1.6"
-                  :exclusions [commons-codec]]
+                 [compojure "1.6.1"]
+                 [day8.re-frame/http-fx "0.1.6"]
                  [enlive "1.1.6"]
                  [environ "1.1.0"]
                  [funcool/struct "1.2.0"]
@@ -24,8 +19,7 @@
                  [hikari-cp "2.4.0"]
                  [migratus "1.0.6"]
                  [org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.238"
-                  :exclusions [commons-codec]]
+                 [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/java.jdbc "0.7.6"]
                  [org.eclipse.jetty/jetty-server "9.4.9.v20180320"]
@@ -36,7 +30,7 @@
                  [ring "1.6.3"]
                  [ring/ring-anti-forgery "1.2.0"]
                  [ring/ring-defaults "0.3.1"]
-                 [ring/ring-json "0.5.0-beta1"]
+                 [metosin/ring-http-response "0.9.0"]
                  [secretary "1.2.3"]]
 
   :plugins [[lein-cljsbuild "1.1.7"]

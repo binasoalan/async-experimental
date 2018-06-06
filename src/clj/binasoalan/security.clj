@@ -6,13 +6,13 @@
 
 (def auth-backend (backends/session))
 
-(defn user-access [req]
-  (authenticated? req))
+(defn user-access [request]
+  (authenticated? request))
 
 (def access-rules [{:pattern #"^/app.*"
                     :handler user-access}])
 
-(defn unauthorized-handler [req val]
+(defn unauthorized-handler [request val]
   (-> (response "Not authorized")
       (content-type "text/html")
       (status 403)))
