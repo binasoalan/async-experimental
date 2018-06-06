@@ -1,6 +1,7 @@
 (ns binasoalan.core
   (:require [binasoalan.handlers.auth :as auth]
             [binasoalan.handlers.register :as register]
+            [binasoalan.security :refer [wrap-security]]
             [binasoalan.views :as views]
             [compojure.core :refer :all]
             [compojure.route :as route]
@@ -14,6 +15,7 @@
   (GET "/tentang" [] views/tentang)
   (GET "/sahkan" [] register/verify-handler)
   (GET "/verified" [] views/verified)
+  (GET "/app" [] "Welcome to app page")
   (POST "/login" [] auth/login-handler)
   (POST "/logout" [] auth/logout-handler)
   (POST "/daftar" [] register/register-handler)
@@ -21,4 +23,5 @@
 
 (def app
   (-> app-routes
+      wrap-security
       (wrap-defaults site-defaults)))
