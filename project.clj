@@ -15,7 +15,6 @@
                  [enlive "1.1.6"]
                  [environ "1.1.0"]
                  [funcool/struct "1.2.0"]
-                 [hiccup "1.0.5"]
                  [hikari-cp "2.4.0"]
                  [migratus "1.0.6"]
                  [org.clojure/clojure "1.9.0"]

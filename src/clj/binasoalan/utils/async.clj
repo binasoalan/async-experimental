@@ -1,4 +1,5 @@
-(ns binasoalan.utils
+(ns binasoalan.utils.async
+  "Utility functions for composing core.async pipeline."
   (:require [clojure.core.async :as async :refer [chan]]))
 
 (defn split-if-error

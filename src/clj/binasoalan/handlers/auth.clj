@@ -1,7 +1,7 @@
 (ns binasoalan.handlers.auth
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.db.users :as users]
-            [binasoalan.utils :refer [fork fork-async]]
+            [binasoalan.utils.async :refer [fork fork-async]]
             [binasoalan.validation :as v]
             [binasoalan.views :as views]
             [buddy.hashers :as hashers]

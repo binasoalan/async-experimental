@@ -1,7 +1,7 @@
 (ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.mailer :as mailer]
-            [binasoalan.utils :refer [fork fork-async]]
+            [binasoalan.utils.async :refer [fork fork-async]]
             [binasoalan.validation :as v]
             [binasoalan.views :as views]
             [binasoalan.db.users :as users]

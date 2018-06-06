@@ -1,5 +1,6 @@
 (ns binasoalan.views
-  (:require [net.cgrand.enlive-html :as html]
+  (:require [binasoalan.utils.enlive :refer [only-when show-when]]
+            [net.cgrand.enlive-html :as html]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
 
 (html/defsnippet nav "templates/nav.html" [:nav]
@@ -9,15 +10,6 @@
 (html/defsnippet login-form "templates/login_form.html" [:form]
   []
   [:#anti-forgery-token] (html/set-attr :value *anti-forgery-token*))
-
-(defn only-when [p transform-fn]
-  (if p
-    transform-fn
-    identity))
-
-(defn show-when [p]
-  (when p
-    identity))
 
 (html/defsnippet register-form "templates/register_form.html" [:form]
   [& [{:keys [errors data]}]]
