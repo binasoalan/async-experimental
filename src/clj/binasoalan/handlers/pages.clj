@@ -1,5 +1,5 @@
 (ns binasoalan.handlers.pages
-  (:require [binasoalan.utils.enlive :refer [defcached]]
+  (:require [binasoalan.utils.enlive :refer [defcached embed-csrf-token]]
             [binasoalan.views :refer :all]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
