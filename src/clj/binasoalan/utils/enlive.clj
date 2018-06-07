@@ -25,9 +25,8 @@
                #"\*anti-forgery-token\*"
                *anti-forgery-token*))
 
-(defmacro define-fragment
-  "Define a fragment for enlive template. A fragment is a memoized version of html
-  string emitted by enlive."
+(defmacro defcached
+  "Define a cached version of enlive template."
   [name args & body]
   `(def ~name (memoize
                (fn ~args

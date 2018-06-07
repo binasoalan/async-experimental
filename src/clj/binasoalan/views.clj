@@ -49,7 +49,7 @@
 
 ;; Pages
 
-(define-fragment index-fragment [uri]
+(defcached index-fragment [uri]
   (base {:uri uri
          :title "Bina Soalan"
          :content (index-content)}))
@@ -59,7 +59,7 @@
   ([request respond _] (respond (index request))))
 
 
-(define-fragment login-fragment [uri errors]
+(defcached login-fragment [uri errors]
   (base {:uri uri
          :title "Log Masuk | Bina Soalan"
          :content (login-content errors)}))
@@ -70,7 +70,7 @@
   ([request respond _]    (respond (login request))))
 
 
-(define-fragment daftar-fragment [uri errors]
+(defcached daftar-fragment [uri errors]
   (base {:uri uri
          :title "Daftar | Bina Soalan"
          :content (daftar-content errors)}))
@@ -81,7 +81,7 @@
   ([request respond _]    (respond (daftar request))))
 
 
-(define-fragment verified-fragment [uri]
+(defcached verified-fragment [uri]
   (base {:uri uri
          :title "Email telah disahkan | Bina Soalan"
          :content (verified-content)}))
@@ -91,7 +91,7 @@
   ([request respond _] (respond (verified request))))
 
 
-(define-fragment tentang-fragment [uri]
+(defcached tentang-fragment [uri]
   (base {:uri uri
          :title "Tentang Kami | Bina Soalan"
          :content (tentang-content)}))
