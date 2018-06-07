@@ -32,27 +32,22 @@
   [:header]      (html/content (nav uri))
   [:#content]    (html/substitute content))
 
-(html/defsnippet index-content "templates/index_content.html" [:section]
-  []
-  [:#register-form] (html/content (register-form)))
+(html/defsnippets "templates/contents.html"
+  [index-content [:#index-content] []
+   [:#register-form] (html/content (register-form))]
 
-(html/defsnippet login-content "templates/login_content.html" [:section]
-  [& [{:keys [message] :as errors}]]
-  [:#login-form] (html/substitute (login-form))
-  [:#message]    (when message
-                   (html/content message)))
+  [login-content [:#login-content] [& [{:keys [message] :as errors}]]
+   [:#login-form] (html/substitute (login-form))
+   [:#message]    (when message
+                    (html/content message))]
 
-(html/defsnippet daftar-content "templates/daftar_content.html" [:section]
-  [& [{:keys [message] :as errors}]]
-  [:#register-form] (html/substitute (register-form errors))
-  [:#message]       (when message
-                      (html/content message)))
+  [daftar-content [:#daftar-content] [& [{:keys [message] :as errors}]]
+   [:#register-form] (html/substitute (register-form errors))
+   [:#message]       (when message
+                       (html/content message))]
 
-(html/defsnippet verified-content "templates/verified_content.html" [:section]
-  [])
-
-(html/defsnippet tentang-content "templates/tentang_content.html" [:section]
-  [])
+  [verified-content [:#verified-content] []]
+  [tentang-content [:#tentang-content] []])
 
 
 ;; Pages
