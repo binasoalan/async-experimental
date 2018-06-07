@@ -1,19 +1,17 @@
 (ns binasoalan.views
-  (:require [binasoalan.utils.enlive :refer [only-when show-when]]
-            [net.cgrand.enlive-html :as html]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
+  (:require [binasoalan.utils.enlive :refer [only-when show-when embed-csrf-token
+                                             define-fragment]]
+            [net.cgrand.enlive-html :as html]))
 
 (html/defsnippet nav "templates/nav.html" [:nav]
   [uri]
   [:ul.navbar-nav [:a (html/attr= :href uri)]] (html/add-class "active"))
 
 (html/defsnippet login-form "templates/login_form.html" [:form]
-  []
-  [:#anti-forgery-token] (html/set-attr :value *anti-forgery-token*))
+  [])
 
 (html/defsnippet register-form "templates/register_form.html" [:form]
   [& [{:keys [errors data]}]]
-  [:#anti-forgery-token] (html/set-attr :value *anti-forgery-token*)
   [:#username-form-group] (->> (html/add-class "has-error")
                                (only-when (:username errors)))
   [:#email-form-group]    (->> (html/add-class "has-error")
@@ -59,35 +57,53 @@
 
 ;; Pages
 
+(define-fragment index-fragment [uri]
+  (base {:uri uri
+         :title "Bina Soalan"
+         :content (index-content)}))
 
 (defn index
-  ([request]           (base {:uri (:uri request)
-                              :title "Bina Soalan"
-                              :content (index-content)}))
+  ([{:keys [uri]}]     (embed-csrf-token (index-fragment uri)))
   ([request respond _] (respond (index request))))
 
+
+(define-fragment login-fragment [uri errors]
+  (base {:uri uri
+         :title "Log Masuk | Bina Soalan"
+         :content (login-content errors)}))
+
 (defn login
-  ([request]           (login request {}))
-  ([request errors]    (base {:uri (:uri request)
-                              :title "Log Masuk | Bina Soalan"
-                              :content (login-content errors)}))
-  ([request respond _] (respond (login request))))
+  ([request]              (login request {}))
+  ([{:keys [uri]} errors] (embed-csrf-token (login-fragment uri errors)))
+  ([request respond _]    (respond (login request))))
+
+
+(define-fragment daftar-fragment [uri errors]
+  (base {:uri uri
+         :title "Daftar | Bina Soalan"
+         :content (daftar-content errors)}))
 
 (defn daftar
-  ([request]           (daftar request {}))
-  ([request errors]    (base {:uri (:uri request)
-                              :title "Daftar | Bina Soalan"
-                              :content (daftar-content errors)}))
-  ([request respond _] (respond (daftar request))))
+  ([request]              (daftar request {}))
+  ([{:keys [uri]} errors] (embed-csrf-token (daftar-fragment uri errors)))
+  ([request respond _]    (respond (daftar request))))
+
+
+(define-fragment verified-fragment [uri]
+  (base {:uri uri
+         :title "Email telah disahkan | Bina Soalan"
+         :content (verified-content)}))
 
 (defn verified
-  ([request]           (base {:uri (:uri request)
-                              :title "Email telah disahkan | Bina Soalan"
-                              :content (verified-content)}))
+  ([{:keys [uri]}]     (verified-fragment uri))
   ([request respond _] (respond (verified request))))
 
+
+(define-fragment tentang-fragment [uri]
+  (base {:uri uri
+         :title "Tentang Kami | Bina Soalan"
+         :content (tentang-content)}))
+
 (defn tentang
-  ([request]           (base {:uri (:uri request)
-                              :title "Tentang Kami | Bina Soalan"
-                              :content (tentang-content)}))
+  ([{:keys [uri]}]     (tentang-fragment uri))
   ([request respond _] (respond (tentang request))))
