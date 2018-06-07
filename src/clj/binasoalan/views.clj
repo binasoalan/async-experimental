@@ -7,41 +7,42 @@
   [uri]
   [:ul.navbar-nav [:a (html/attr= :href uri)]] (html/add-class "active"))
 
-(html/defsnippet login-form "templates/login_form.html" [:form]
-  [])
-
-(html/defsnippet register-form "templates/register_form.html" [:form]
-  [& [{:keys [errors data]}]]
-  [:#username-form-group] (->> (html/add-class "has-error")
-                               (only-when (:username errors)))
-  [:#email-form-group]    (->> (html/add-class "has-error")
-                               (only-when (:email errors)))
-  [:#password-form-group] (->> (html/add-class "has-error")
-                               (only-when (:password errors)))
-  [:#username]            (->> (html/set-attr :value (:username data))
-                               (only-when (:username data)))
-  [:#email]               (->> (html/set-attr :value (:email data))
-                               (only-when (:email data)))
-  [:#username-error]      (show-when (:username errors))
-  [:#email-error]         (show-when (:email errors))
-  [:#password-error]      (show-when (:password errors)))
-
 (html/deftemplate base "templates/base.html"
   [{:keys [uri title content]}]
   [:head :title] (html/content title)
   [:header]      (html/content (nav uri))
   [:#content]    (html/substitute content))
 
+(html/defsnippets "templates/forms.html"
+  [login-form [:#login-form] []]
+  [register-form [:#register-form]
+   [& [{:keys [errors data]}]]
+   [:#username-form-group] (->> (html/add-class "has-error")
+                                (only-when (:username errors)))
+   [:#email-form-group]    (->> (html/add-class "has-error")
+                                (only-when (:email errors)))
+   [:#password-form-group] (->> (html/add-class "has-error")
+                                (only-when (:password errors)))
+   [:#username]            (->> (html/set-attr :value (:username data))
+                                (only-when (:username data)))
+   [:#email]               (->> (html/set-attr :value (:email data))
+                                (only-when (:email data)))
+   [:#username-error]      (show-when (:username errors))
+   [:#email-error]         (show-when (:email errors))
+   [:#password-error]      (show-when (:password errors))])
+
 (html/defsnippets "templates/contents.html"
   [index-content [:#index-content] []
    [:#register-form] (html/content (register-form))]
 
-  [login-content [:#login-content] [& [{:keys [message] :as errors}]]
+  [login-content [:#login-content]
+   [& [{:keys [message] :as errors}]]
    [:#login-form] (html/substitute (login-form))
    [:#message]    (when message
                     (html/content message))]
 
-  [daftar-content [:#daftar-content] [& [{:keys [message] :as errors}]]
+  [daftar-content [:#daftar-content]
+   [& [{:keys [message] :as errors}]]
    [:#register-form] (html/substitute (register-form errors))
    [:#message]       (when message
                        (html/content message))]
