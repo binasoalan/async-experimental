@@ -1,6 +1,7 @@
 (ns binasoalan.utils.enlive
   "Utility functions for enlive transformations."
   (:require [clojure.string :as str]
+            [net.cgrand.enlive-html :as html]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
 
 (defn only-when
@@ -31,3 +32,8 @@
   `(def ~name (memoize
                (fn ~args
                  (apply str ~@body)))))
+
+(defn has-link-to
+  "Selector predicate, matches elements which contain a link to specified uri."
+  [uri]
+  (html/has [[:a (html/attr= :href uri)]]))

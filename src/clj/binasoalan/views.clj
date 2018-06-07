@@ -1,17 +1,13 @@
 (ns binasoalan.views
-  (:require [binasoalan.utils.enlive :refer [only-when show-when embed-csrf-token
-                                             define-fragment]]
+  (:require [binasoalan.utils.enlive :refer :all]
             [net.cgrand.enlive-html :as html]))
-
-(html/defsnippet nav "templates/nav.html" [:nav]
-  [uri]
-  [:ul.navbar-nav [:a (html/attr= :href uri)]] (html/add-class "active"))
 
 (html/deftemplate base "templates/base.html"
   [{:keys [uri title content]}]
-  [:head :title] (html/content title)
-  [:header]      (html/content (nav uri))
-  [:#content]    (html/substitute content))
+  [:head :title]            (html/content title)
+  [:header :ul.navbar-nav
+   [:li (has-link-to uri)]] (html/add-class "active")
+  [:#content]               (html/substitute content))
 
 (html/defsnippets "templates/forms.html"
   [login-form [:#login-form] []]
