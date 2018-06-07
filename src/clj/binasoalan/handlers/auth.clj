@@ -1,9 +1,9 @@
 (ns binasoalan.handlers.auth
   (:require [binasoalan.db :refer [db-spec]]
             [binasoalan.db.users :as users]
+            [binasoalan.handlers.pages :as pages]
             [binasoalan.utils.async :refer [fork fork-async]]
             [binasoalan.validation :as v]
-            [binasoalan.views :as views]
             [buddy.hashers :as hashers]
             [clojure.core.async :as async :refer [chan go alt! put! close!]]
             [ring.util.http-response :refer :all]))
@@ -43,10 +43,10 @@
 
 
 (defn- invalid-response [request]
-  (views/login request {:message "invalid input"}))
+  (pages/login request {:message "invalid input"}))
 
 (defn- not-found-response [request]
-  (views/login request {:message "wrong username/password"}))
+  (pages/login request {:message "wrong username/password"}))
 
 (defn login-handler
   "Handler for user login."

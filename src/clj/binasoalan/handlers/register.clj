@@ -1,9 +1,9 @@
 (ns binasoalan.handlers.register
   (:require [binasoalan.db :refer [db-spec]]
+            [binasoalan.handlers.pages :as pages]
             [binasoalan.mailer :as mailer]
             [binasoalan.utils.async :refer [fork fork-async]]
             [binasoalan.validation :as v]
-            [binasoalan.views :as views]
             [binasoalan.db.users :as users]
             [buddy.hashers :as hashers]
             [buddy.core.codecs :as codecs]
@@ -16,7 +16,9 @@
           :failed "Pendaftaran gagal. Sila cuba semula."})
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; User registration
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- check-existing-user
   "Check whether username or email already existed. The result is a vector where
@@ -55,16 +57,16 @@
   (map v/validate-registration))
 
 (defn- invalid-response [request [errors data :as result]]
-  (views/daftar request {:errors errors :data data}))
+  (pages/daftar request {:errors errors :data data}))
 
 (defn- not-available-response [request]
-  (views/daftar request {:message (:user-existed msg)}))
+  (pages/daftar request {:message (:user-existed msg)}))
 
 (defn- failed-response [request]
-  (views/daftar request {:message (:failed msg)}))
+  (pages/daftar request {:message (:failed msg)}))
 
 (defn- success-response [request]
-  (views/login request {:message (:success msg)}))
+  (pages/login request {:message (:success msg)}))
 
 (defn register-handler
   "Handler for user registration. The process goes through validation, checking
@@ -90,7 +92,9 @@
       (close! input-ch))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Email verification
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- lookup-token
   "Check if token actually exist in the database. The result is a vector where the
